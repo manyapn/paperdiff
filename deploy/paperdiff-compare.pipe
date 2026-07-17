@@ -1,0 +1,51 @@
+{
+	"components": [
+		{
+			"id": "chat_1",
+			"provider": "chat",
+			"config": { "hideForm": true, "mode": "Source", "parameters": {}, "type": "chat" }
+		},
+		{
+			"id": "agent_rocketride_1",
+			"provider": "agent_rocketride",
+			"config": {
+				"instructions": [
+					"You are the PaperDiff Compare pipeline. The incoming question contains a JSON body matching contracts/compare.md's request shape (left/right, each with url or claim). Respond with ONLY a single JSON object matching contracts/compare.md's response shape exactly: left, right, dimensions (array), verdict {headline, explanation}, synthesis, evidence_summary, trace (array). Until live paper retrieval is wired up, use the checked-in synthetic demo pair's values as placeholder content, and set every trace entry's status to reflect that this is placeholder/demo data, not a live comparison. Never fabricate a real DOI or claim actual peer-reviewed evidence status for placeholder content. Return raw JSON only, no prose, no markdown fences."
+				],
+				"max_waves": 5,
+				"parameters": {}
+			},
+			"input": [{ "lane": "questions", "from": "chat_1" }]
+		},
+		{
+			"id": "llm_openai_1",
+			"provider": "llm_openai",
+			"config": {
+				"profile": "openai-4o",
+				"openai-4o": { "apikey": "${ROCKETRIDE_OPENAI_KEY}" },
+				"parameters": {}
+			},
+			"control": [
+				{ "classType": "llm", "from": "agent_rocketride_1" }
+			]
+		},
+		{
+			"id": "memory_internal_1",
+			"provider": "memory_internal",
+			"config": { "type": "memory_internal" },
+			"control": [
+				{ "classType": "memory", "from": "agent_rocketride_1" }
+			]
+		},
+		{
+			"id": "response_answers_1",
+			"provider": "response_answers",
+			"config": { "laneName": "answers" },
+			"input": [{ "lane": "answers", "from": "agent_rocketride_1" }]
+		}
+	],
+	"name": "paperdiff-compare",
+	"description": "PaperDiff Compare pipeline -- placeholder agent step, classifier + Linkup tool wiring to follow.",
+	"project_id": "9c3f6c2e-3f2b-4b7a-9a2e-1a7b7f6d2c41",
+	"version": 1
+}
