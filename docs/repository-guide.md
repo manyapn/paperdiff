@@ -7,8 +7,8 @@ This is the teammate-facing map of the repository: what exists, what each compon
 PaperDiff has three moving parts:
 
 ```text
-Supplied interactive HTML frontend
-    ↓ will call one deployed workflow
+Static Vite frontend
+    ↓ calls configured deployed workflows
 RocketRide pipeline + Linkup retrieval
     ↓ sends (claim, exact evidence passage)
 Lightweight classifier trained in Google Colab
@@ -18,16 +18,26 @@ RocketRide returns diff + verdict + evidence states
 Interactive frontend renders the result
 ```
 
-There is no FastAPI service, separate Node server, database, or Docker setup. RocketRide is the hosted backend/orchestrator. The supplied self-contained HTML bundle is the only frontend; Vite is just its local server/build wrapper. The model is trained separately in Colab and exposed to the pipeline through the small contract in `ml/export-contract.md`.
+There is no FastAPI service, separate Node server, database, or Docker setup. RocketRide is the hosted backend/orchestrator. The frontend is a static Vite app whose editable template, styles, behavior, and loader are separated under `apps/web/src/`. The supplied animation runtime is isolated as generated vendor data. The model is trained separately in Colab and exposed to the pipeline through the small contract in `ml/export-contract.md`.
 
 ## File structure
 
 ```text
 paperdiff/
 ├── apps/
-│   └── web/                              # Supplied self-contained product UI
-│       ├── index.html                    # Styles, assets, logic, and demo data
-│       ├── tests/frontend.test.ts        # Bundle smoke/feature checks
+│   └── web/                              # Static product frontend
+│       ├── index.html                    # Small Vite document shell
+│       ├── src/
+│       │   ├── main.ts                   # Runtime loading and document startup
+│       │   ├── api.ts                    # Typed RocketRide HTTP client
+│       │   ├── component.js              # Compare/Challenge behavior and API calls
+│       │   ├── paperdiff.template.html   # Product markup
+│       │   ├── styles.css                # Product visual system and animations
+│       │   └── loading.css               # Initial loading screen
+│       ├── public/
+│       │   ├── config.json               # Public RocketRide endpoint URLs
+│       │   └── vendor/                   # Generated animation runtime/assets
+│       ├── tests/frontend.test.ts        # UI contract and truthfulness checks
 │       ├── package.json
 │       ├── tsconfig.json
 │       ├── vite.config.ts                # Thin static build wrapper
@@ -58,14 +68,16 @@ paperdiff/
 │   ├── README.md                         # Sources, licenses, splits, annotations
 │   ├── raw/README.md                     # Local source-data policy
 │   ├── processed/README.md               # Canonical train JSONL schema
-│   └── annotations/example-pair.jsonl    # Synthetic pair annotation example
+│   └── annotations/                      # Traceable, review-status-labeled pairs
 │
 ├── evaluation/
 │   └── README.md                         # Required baselines and metrics
 │
 ├── contracts/
 │   ├── README.md                         # Cross-team schema rules
-│   └── examples/compare-request.json
+│   ├── compare.md                        # Compare request/response contract
+│   ├── challenge.md                      # Challenge request/response contract
+│   └── examples/compare-request.json     # Placeholder-only request shape
 │
 ├── artifacts/
 │   └── README.md                         # Where reviewed real results belong
@@ -91,17 +103,17 @@ paperdiff/
 ## What works now
 
 - The supplied Compare and Challenge UI runs locally and builds as a static site.
-- Its embedded demo data exercises the complete interface without service keys.
+- The UI sends real POST requests to configured RocketRide endpoints and contains no scientific fallback data.
 - The UI includes input resolution, analysis animation, methodological diffs, provenance drawers, verdict, careful synthesis, pipeline trace, and Challenge candidates.
 - Deterministic provenance code validates source origin, fetch success, paper identity, exact normalized passage existence, and span specificity.
 - Classifier policy maps every model result to a user-facing state and blocks model confidence from overriding failed provenance.
-- Tests cover the frontend bundle features, provenance gate, and all classifier mappings.
+- Tests cover frontend structure and API behavior, provenance gate, and all classifier mappings.
 - GitHub Actions type-checks, tests, builds, and deploys the static site from `main`.
 
 ## What remains to build
 
 - The actual RocketRide workflow and deployed Compare endpoint
-- Replacing the supplied frontend's simulated resolve/analyze timers with the live endpoint
+- Configuring the deployed RocketRide endpoint in `apps/web/public/config.json`
 - Linkup fetch/search nodes with raw-response preservation
 - Symmetric paper extraction and dimension alignment
 - Connection from RocketRide to the trained classifier artifact or endpoint
@@ -180,23 +192,23 @@ This runs workspace type-checks, all unit tests, the core declaration build, and
 
 ## Deployment
 
-The static demo deploys from `main` through `.github/workflows/ci.yml`. It does not need Docker.
+The static frontend deploys from `main` through `.github/workflows/ci.yml`. It does not need Docker.
 
 For the live pipeline:
 
 1. Deploy Compare through RocketRide.
-2. Replace the simulated resolve/analyze functions in `apps/web/index.html` with calls to that endpoint.
+2. Set `compareEndpoint` in `apps/web/public/config.json`.
 3. Keep `LINKUP_API_KEY`, `ROCKETRIDE_APIKEY`, model-hosting credentials, and LLM fallback keys server-side.
-4. Preserve the embedded demo as an offline fallback for judging reliability.
+4. Use real, prevalidated inputs as judging fallbacks; never embed their results in the browser.
 
 ## Contract boundaries
 
-- `contracts/examples/compare-request.json` is the workflow request.
-- `apps/web/index.html` currently embeds the interactive demo data and expected presentation fields.
+- `contracts/examples/compare-request.json` is a placeholder-only workflow request shape.
+- `contracts/compare.md` and `contracts/challenge.md` define the fields the frontend consumes.
 - `packages/core/src/types.ts` is the narrow claim-evidence classifier/provenance contract.
 - `ml/export-contract.md` is the handoff from Colab training to pipeline inference.
 
-Before live wiring, extract a stable Compare response schema from the embedded demo into `contracts/` and test RocketRide output against it.
+Validate every RocketRide response against the stable contract before frontend handoff.
 
 The frontend renders classifications returned by the pipeline. It must not re-run scientific comparison logic in the browser.
 

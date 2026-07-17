@@ -46,7 +46,7 @@ export function validateProvenance(candidate: ProvenanceCandidate): ProvenanceRe
     span_specific: Boolean(candidate.evidenceSpanId && quote.split(" ").length >= 4),
   };
   const messages: Record<keyof ProvenanceChecks, string> = {
-    source_origin: "Source did not originate from the user, Linkup, or demo fixture.",
+    source_origin: "Source did not originate from the user or Linkup.",
     fetched: "Source fetch did not complete successfully.",
     identity_match: "Fetched paper identity does not match the extracted paper.",
     passage_match: "Quoted passage was not found in normalized fetched text.",
@@ -57,4 +57,3 @@ export function validateProvenance(candidate: ProvenanceCandidate): ProvenanceRe
     .map((key) => messages[key]);
   return { passed: failureReasons.length === 0, checks, failure_reasons: failureReasons };
 }
-

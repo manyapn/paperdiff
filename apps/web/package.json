@@ -8,7 +8,7 @@
     "build": "vite build",
     "lint": "tsc --noEmit",
     "test": "vitest run",
-    "format": "prettier --write index.html tests vite.config.ts"
+    "format": "prettier --write index.html src tests vite.config.ts"
   },
   "devDependencies": {
     "@types/node": "^24.10.0",

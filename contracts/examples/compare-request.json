@@ -1,11 +1,12 @@
 {
   "left": {
-    "kind": "demo",
-    "value": "paper-a"
+    "url": null,
+    "claim": "<claim supplied by the user>",
+    "use_detected_conclusion": true
   },
   "right": {
-    "kind": "demo",
-    "value": "paper-b"
+    "url": "<paper URL or DOI supplied by the user>",
+    "claim": null,
+    "use_detected_conclusion": true
   }
 }
-

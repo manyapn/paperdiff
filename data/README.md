@@ -3,7 +3,7 @@
 ## Sources and licenses
 
 - SciFact is intended for verifier training and validation. Source: AI2's official release, downloaded directly from `https://scifact.s3-us-west-2.amazonaws.com/release/latest/data.tar.gz` (the HF `datasets` script loader for `allenai/scifact` no longer works -- `datasets` v3 removed script-based loading -- so this project pulls the tarball directly instead). License: CC BY-NC 2.0.
-  - Download checksum: **TODO** -- run `!sha256sum scifact_data/data.tar.gz` in the Colab session that downloaded it and paste the hash here. Not filled in yet because this repo edit was made without a live copy of the tarball.
+  - Download checksum (SHA-256): `11c621288d41ac144d29b13b0f8503b3820b7d6e8b1f6ff24dff335c196d76be`
   - Files used: `corpus.jsonl` (5183 docs), `claims_train.jsonl` (1261 claims), `claims_dev.jsonl` (450 claims, used as validation). `claims_test.jsonl` exists but is unlabeled and unused.
   - Triples built via `ml/1_data_prep.py`: one row per (claim, evidence) rationale for SUPPORT/CONTRADICT claims (a claim can produce multiple triples if it has multiple annotated rationales), one row per NOINFO claim paired with a cited-but-unevidenced abstract as distractor context.
   - Observed label distribution: train `{insufficient: 304, supports: 616, contradicts: 341}` (1261 triples total), val `{insufficient: 112, supports: 216, contradicts: 122}` (450 triples total). Recorded from an actual run -- rerun `1_data_prep.py` and update this if the AI2 release changes.
