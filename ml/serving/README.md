@@ -5,18 +5,24 @@ filesystem or network access by default, so the trained classifier cannot run
 inside a RocketRide pipeline directly. Instead this small FastAPI service hosts
 `paperdiff-verifier-v1` and RocketRide calls it over HTTP via `tool_http_request`.
 
+Weights are not stored in this repo or baked into the Docker image -- they load
+at startup from the private HF Hub repo `ml/6_upload_weights_hf.py` pushes to
+(`o0meerkat0o/paperdiff-verifier-v1` by default), using the same loading logic
+as `ml/7_load_model_from_huggingface.py`.
+
 ## Deploy to a free Hugging Face Space
 
-1. Create a new Space at huggingface.co/new-space, SDK = **Docker**, hardware =
+1. Run `ml/6_upload_weights_hf.py` first (from Colab, after
+   `5_export_model.py`) so the model repo exists on the Hub.
+2. Create a new Space at huggingface.co/new-space, SDK = **Docker**, hardware =
    free CPU basic.
-2. Push this `ml/serving/` directory's contents (`app.py`, `requirements.txt`,
+3. Push this `ml/serving/` directory's contents (`app.py`, `requirements.txt`,
    `Dockerfile`) to the Space's git repo.
-3. Upload the exported `paperdiff-verifier-v1/` artifact directory (produced by
-   the Colab export cell, per `ml/export-contract.md`) into the same directory
-   as `app.py` before the image builds -- it is not committed to this repo,
-   since it's a binary model artifact (see `.gitignore`/`data/README.md`
-   conventions for why large binaries stay out of git history).
-4. Wait for the Space to build. Note the Space's public URL, e.g.
+4. In the Space's **Settings > Repository secrets**, add `HF_TOKEN` -- a
+   **read-scoped** token (https://huggingface.co/settings/tokens), not the
+   write token used to upload weights. If the model repo ID differs from the
+   default, also set `HF_REPO_ID`.
+5. Wait for the Space to build. Note the Space's public URL, e.g.
    `https://<your-username>-paperdiff-verifier.hf.space`.
 
 ## Smoke test

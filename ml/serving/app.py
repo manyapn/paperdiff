@@ -4,19 +4,21 @@
 # transformers (RestrictedPython sandbox, no filesystem/network access), so
 # inference has to be hosted as its own HTTP service.
 #
-# Expects the exported artifact directory (paperdiff-verifier-v1/, produced
-# by the Colab export cell) to be present at MODEL_DIR -- upload it to this
-# Space's persistent storage or bake it into the Docker image.
+# Loads weights from the private HF Hub repo produced by
+# ml/6_upload_weights_hf.py (see ml/7_load_model_from_huggingface.py, whose
+# loading logic this mirrors) rather than a locally-uploaded checkpoint
+# directory -- no manual zip/upload step to this Space needed.
 
+import json
 import os
-from pathlib import Path
 
 import torch
 from fastapi import FastAPI, HTTPException
+from huggingface_hub import hf_hub_download
 from pydantic import BaseModel
 from transformers import AutoTokenizer, AutoModelForSequenceClassification
 
-MODEL_DIR = Path(os.environ.get("MODEL_DIR", "paperdiff-verifier-v1"))
+HF_REPO_ID = os.environ.get("HF_REPO_ID", "o0meerkat0o/paperdiff-verifier-v1")
 CONFIDENCE_THRESHOLD = float(os.environ.get("CONFIDENCE_THRESHOLD", "0.7"))
 MAX_LENGTH = 256
 
@@ -32,20 +34,18 @@ def _load():
     global _tokenizer, _model, _id2label
     if _model is not None:
         return
-    if not MODEL_DIR.exists():
-        raise RuntimeError(
-            f"MODEL_DIR {MODEL_DIR} not found. Upload the exported "
-            "paperdiff-verifier-v1/ artifact directory to this Space."
-        )
-    import json
 
-    with open(MODEL_DIR / "label_mapping.json") as f:
-        # Repo's own export script writes this as the REAL trained order,
-        # not the export-contract.md example order -- read it, don't assume.
-        _id2label = {int(k): v for k, v in json.load(f).items()}
-    _tokenizer = AutoTokenizer.from_pretrained(MODEL_DIR)
-    _model = AutoModelForSequenceClassification.from_pretrained(MODEL_DIR).to(_device)
+    token = os.environ.get("HF_TOKEN")  # read-scoped token, not the upload token
+    _tokenizer = AutoTokenizer.from_pretrained(HF_REPO_ID, token=token)
+    _model = AutoModelForSequenceClassification.from_pretrained(HF_REPO_ID, token=token).to(_device)
     _model.eval()
+
+    # label_mapping.json isn't a standard HF file, so pull it separately --
+    # this is the REAL trained order (from 1_data_prep.py / 2_train.py),
+    # not export-contract.md's example order. Don't assume, read it.
+    mapping_path = hf_hub_download(HF_REPO_ID, "label_mapping.json", token=token)
+    with open(mapping_path) as f:
+        _id2label = {int(k): v for k, v in json.load(f).items()}
 
 
 class Pair(BaseModel):
