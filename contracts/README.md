@@ -1,8 +1,11 @@
-# Shared API contract
+# Shared contracts
 
-The Pydantic models in `services/api/paperdiff_api/models.py` are the runtime source of truth. FastAPI exposes their generated OpenAPI schema at `/openapi.json` and interactive docs at `/docs`.
+PaperDiff has two intentionally separate contracts:
 
-Frontend interfaces live in `apps/web/src/types.ts`; the checked-in cross-team response fixture is `apps/web/src/lib/demoComparison.ts`. A shared model change is complete only when all three agree and both API and frontend tests pass.
+1. Compare workflow: `examples/compare-request.json` in; the shape in `apps/web/src/types.ts` out.
+2. Claim-evidence classifier: the input/output in `packages/core/src/types.ts` and `ml/export-contract.md`.
 
-The compare endpoint accepts `examples/compare-request.json`. Inputs may be `url`, `doi`, `claim`, or `demo`. Demo is fixture-only; live values pass through the fail-closed retrieval path.
+`apps/web/src/lib/demoComparison.ts` is the stable Compare response fixture used while RocketRide is under development. A shared contract change is complete only after the fixture, consumer types, pipeline output, and tests agree.
+
+The trained classifier does not choose comparison dimensions or the final contradiction verdict. It only checks whether one exact passage supports, contradicts, or is insufficient for one claim.
 

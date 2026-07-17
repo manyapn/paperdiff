@@ -26,7 +26,7 @@ Keep one person in each lane. P0 tasks are ordered to minimize cross-team blocki
 - [ ] Create recorded retrieval fixtures for one golden pair and two fallbacks.
 - [ ] Implement one shared extractor over the stable paper schema.
 - [ ] Run both extractors concurrently and record stage latency.
-- [ ] Produce eight to ten dimension diffs and the verdict from backend data.
+- [ ] Produce eight to ten dimension diffs and the verdict from RocketRide output.
 - [ ] Deploy Compare mode to RocketRide Cloud and save the trace URL/reference.
 
 ### P1
@@ -41,15 +41,16 @@ Keep one person in each lane. P0 tasks are ordered to minimize cross-team blocki
 - [ ] Select one real open-access golden pair and two fallback pairs.
 - [ ] Link every extracted field to an exact passage and source identity.
 - [ ] Expand provenance tests with identity/version, missing span, and fetch failures.
-- [ ] Wire the prompted relationship verifier after the provenance gate.
+- [ ] Finish the Colab three-class classifier and export its versioned inference artifact.
+- [ ] Wire the trained classifier after the provenance gate, with prompted LLM as fallback.
 - [ ] Curate and annotate 8-12 held-out paper pairs using `data/README.md`.
 - [ ] Build the throwaway sequential baseline and compare latency with parallel execution.
 - [ ] Report pair-level field agreement, root-dimension recall, evidence coverage, verdict accuracy, unsupported pass-through, and latency.
 
-### P1 / post-hackathon
+### P1
 
 - [ ] Record the exact SciFact version, license, checksum, and split.
-- [ ] Implement majority, embedding, prompted-LLM, cross-encoder, and hybrid baselines.
+- [ ] Finish `3_baselines.py`: majority, embedding, prompted-LLM, trained classifier, and hybrid comparisons.
 - [ ] Add confidence calibration, abstention coverage curves, ablations, and model card results.
 
 ## Shared integration checkpoints
@@ -59,4 +60,3 @@ Keep one person in each lane. P0 tasks are ordered to minimize cross-team blocki
 - **T+5 hours:** deterministic provenance blocks a deliberately corrupted quote.
 - **T+6.5 hours:** Compare runs end to end on golden and fallback pairs.
 - **T+7 hours:** freeze Compare; use remaining time for demo rehearsal or Challenge only if stable.
-

@@ -1,4 +1,3 @@
 # Pipeline lane
 
-Own `services/api/paperdiff_api/pipeline/**` and `integrations/**`. Read the root and API `AGENTS.md` plus `docs/integrations.md`. Implement Linkup and RocketRide only from confirmed current interfaces. Keep extraction symmetric and all failure states honest. Run relevant API tests before handoff.
-
+Own the RocketRide workflow, Linkup integration, and `contracts/**`. Read root `AGENTS.md`, `docs/integrations.md`, and `contracts/README.md`. Use only confirmed current interfaces, keep extraction symmetric, preserve raw retrieval output, and keep all failure states honest. Validate the workflow response against the frontend fixture before handoff.

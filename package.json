@@ -1,0 +1,17 @@
+{
+  "name": "paperdiff",
+  "private": true,
+  "version": "0.1.0",
+  "workspaces": [
+    "apps/web",
+    "packages/core"
+  ],
+  "scripts": {
+    "dev": "npm run dev --workspace @paperdiff/web",
+    "build": "npm run build --workspace @paperdiff/core && npm run build --workspace @paperdiff/web",
+    "test": "npm run test --workspaces --if-present",
+    "lint": "npm run lint --workspaces --if-present",
+    "check": "npm run lint && npm run test && npm run build"
+  }
+}
+

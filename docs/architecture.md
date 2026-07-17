@@ -3,40 +3,58 @@
 ## Compare-mode data flow
 
 ```text
-Input A -> retrieve -> extract --\
-                                +-> align dimensions -> classify rows -> verdict/synthesis
-Input B -> retrieve -> extract --/                      |
-                                                       v
-                                      provenance gate -> relationship verifier
+                          ROCKETRIDE WORKFLOW
+Input A -> Linkup -> extract --\
+                               +-> align dimensions -> classify diffs -> verdict/synthesis
+Input B -> Linkup -> extract --/                              |
+                                                              v
+                                             deterministic provenance gate
+                                                              |
+                                                              v
+                                   claim-evidence classifier (trained model)
+                                                              |
+                                                              v
+                                                static React diff interface
 ```
 
-The two extraction branches are symmetric and safe to run concurrently. The frontend consumes only the final comparison response.
+RocketRide is the only application backend. The frontend is a static site, and model training happens separately in Google Colab.
+
+## Classifier boundary
+
+The trained model receives exactly two strings: a claim and one candidate evidence passage. It returns one of:
+
+- `supports`
+- `contradicts`
+- `insufficient`
+
+It also returns confidence, abstention state, and model version. It does not retrieve papers, extract dimensions, classify methodological differences, or decide whether two papers genuinely conflict.
 
 ## Trust boundary
 
-PaperDiff asks two separate questions:
+PaperDiff asks two separate questions in order:
 
 1. **Is this evidence real and traceable?** Deterministic checks validate source origin, successful fetch, paper identity, exact passage existence, and span-level linkage.
-2. **Does it support the interpretation?** A semantic verifier labels `supports`, `partial`, `insufficient`, or `contradicts` with confidence and review status.
+2. **Does this passage support this claim?** The trained classifier returns `supports`, `contradicts`, or `insufficient`.
 
-The semantic stage may not override a provenance failure. A blocked evidence span never becomes an evidence-backed UI claim.
+The second stage may never override a failure in the first stage.
+
+| Result | Product state |
+| --- | --- |
+| Provenance failed | Blocked |
+| High-confidence supports | Grounded |
+| Lower-confidence supports | Qualified |
+| Contradicts | Flag extracted field for correction |
+| Insufficient or abstained | Needs review |
 
 ## Core entities
 
-- `ComparisonRequest`: two user inputs plus optional tracing metadata.
-- `PaperExtraction`: normalized claim, paper identity, dimensions, and evidence spans.
-- `DimensionDiff`: values from each paper, classification, rationale, and evidence IDs.
-- `EvidenceSpan`: source identity, exact quote, provenance result, and relationship result.
-- `ComparisonResponse`: both papers, diffs, verdict, synthesis, and trace metadata.
-
-## Extension points
-
-- `PaperRetriever`: Linkup-backed fetch or a local test double.
-- `PaperExtractor`: one shared prompt/model used for both papers.
-- `RelationshipVerifier`: prompted LLM for demo; later scientific cross-encoder.
-- `TraceSink`: local no-op/test trace; later RocketRide execution and observability.
+- `ComparisonRequest`: two paper/claim inputs.
+- `PaperExtraction`: normalized paper identity, dimensions, and exact evidence spans.
+- `DimensionDiff`: both values, comparability classification, rationale, and evidence IDs.
+- `ClassifierResult`: label, confidence, abstention, and model version for one claim/passage pair.
+- `ComparisonResponse`: papers, diffs, evidence states, verdict, synthesis, and RocketRide trace.
 
 ## Challenge mode
 
-Challenge adds three parallel discovery scouts and a seven-dimension comparison-fit ranker before the existing Compare pipeline. It must hand one candidate into the exact same request contract; it is not a second analysis stack.
+Challenge adds three discovery scouts and comparison-fit ranking before the exact same Compare pipeline. It remains a stretch goal until Compare is stable.
 

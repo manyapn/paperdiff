@@ -1,4 +1,3 @@
 # Verification lane
 
-Own `verification/**`, `evaluation/**`, `ml/**`, and `data/**`. Read the root and API `AGENTS.md` plus `data/README.md`. Separate deterministic provenance from semantic support, keep curated pairs held out, and report calibration, coverage, unsupported pass-through, latency, and failure taxonomy.
-
+Own `notebooks/**`, `ml/**`, `packages/core/**`, `evaluation/**`, and `data/**`. Read root `AGENTS.md`, `packages/core/AGENTS.md`, and `data/README.md`. The model only classifies `(claim, evidence)` as supports, contradicts, or insufficient. Separate deterministic provenance from model judgment, keep curated pairs held out, and report calibration, coverage, unsupported pass-through, latency, and failure taxonomy.

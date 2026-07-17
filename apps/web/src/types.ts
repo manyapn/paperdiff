@@ -1,6 +1,11 @@
 export type InputKind = "url" | "doi" | "claim" | "demo";
 export type DiffClassification = "equivalent" | "different" | "incompatible";
-export type ReviewStatus = "grounded" | "qualified" | "needs_review" | "blocked";
+export type ReviewStatus =
+  | "grounded"
+  | "qualified"
+  | "flagged_for_correction"
+  | "needs_review"
+  | "blocked";
 
 export interface ProvenanceResult {
   passed: boolean;
@@ -27,6 +32,8 @@ export interface EvidenceSpan {
   relationship: {
     label: "supports" | "partial" | "insufficient" | "contradicts";
     confidence: number;
+    abstained: boolean;
+    model_version: string;
     status: ReviewStatus;
     rationale: string;
   };
@@ -85,4 +92,3 @@ export interface APIError {
   message: string;
   next_step?: string;
 }
-
