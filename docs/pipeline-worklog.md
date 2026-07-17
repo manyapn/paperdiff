@@ -150,3 +150,8 @@ Append-only log. Add new timestamped entries at the end. Do not edit, reorder, o
 
 - Before publication, removed the temporary public-token fallback from the serverless source. `/api/compare` now fails closed with HTTP 503 unless `ROCKETRIDE_PUBLIC_TOKEN` is configured in Vercel; no live authorization value is committed to Git.
 - Removed the local frontend demo-fixture switch from the publishable path so judge requests continue through RocketRide and Linkup rather than embedded results.
+
+## 2026-07-17 15:04 PDT — Vercel production build made deterministic
+
+- Diagnosed repeated Vercel deployments stuck in `Building`: the project was launching Vite's long-running development server instead of a production build.
+- Added `apps/web/vercel.json` to pin Vercel to the Vite framework, `npm run build`, and the `dist` output directory. The RocketRide public authorization remains a sensitive Production environment variable rather than repository content.
