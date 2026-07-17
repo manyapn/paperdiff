@@ -1,0 +1,35 @@
+name: Component task
+description: A scoped PaperDiff implementation task
+title: "[component] "
+labels: ["component-task"]
+body:
+  - type: dropdown
+    id: component
+    attributes:
+      label: Component
+      options:
+        - Frontend
+        - Pipeline / integrations
+        - Verification / evaluation
+        - Shared contract
+    validations:
+      required: true
+  - type: textarea
+    id: outcome
+    attributes:
+      label: User-visible outcome
+      description: Describe the observable result, not only implementation steps.
+    validations:
+      required: true
+  - type: textarea
+    id: acceptance
+    attributes:
+      label: Acceptance checks
+      placeholder: "- [ ] ..."
+    validations:
+      required: true
+  - type: textarea
+    id: dependencies
+    attributes:
+      label: Contract or integration dependencies
+

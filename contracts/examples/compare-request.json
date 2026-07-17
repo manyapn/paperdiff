@@ -1,0 +1,11 @@
+{
+  "left": {
+    "kind": "demo",
+    "value": "paper-a"
+  },
+  "right": {
+    "kind": "demo",
+    "value": "paper-b"
+  }
+}
+
