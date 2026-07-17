@@ -4,10 +4,11 @@
 # transformers (RestrictedPython sandbox, no filesystem/network access), so
 # inference has to be hosted as its own HTTP service.
 #
-# Loads weights from the private HF Hub repo produced by
+# Loads weights from the public, ungated HF Hub repo produced by
 # ml/6_upload_weights_hf.py (see ml/7_load_model_from_huggingface.py, whose
 # loading logic this mirrors) rather than a locally-uploaded checkpoint
-# directory -- no manual zip/upload step to this Space needed.
+# directory -- no manual zip/upload step to this Space needed. HF_TOKEN is
+# optional and only useful for authenticated Hub rate limits.
 
 import json
 import os
@@ -37,7 +38,9 @@ def _load():
     if _model is not None:
         return
 
-    token = os.environ.get("HF_TOKEN")  # read-scoped token, not the upload token
+    # The default repo is public and ungated. An optional read-scoped token can
+    # provide authenticated Hub rate limits; never use the upload token here.
+    token = os.environ.get("HF_TOKEN")
     tokenizer = AutoTokenizer.from_pretrained(HF_REPO_ID, token=token)
     model = AutoModelForSequenceClassification.from_pretrained(HF_REPO_ID, token=token).to(_device)
     model.eval()

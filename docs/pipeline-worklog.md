@@ -115,3 +115,11 @@ Append-only log. Add new timestamped entries at the end. Do not edit, reorder, o
 - Verified the public Hugging Face model repository at `https://huggingface.co/o0meerkat0o/paperdiff-verifier-v1` through its model metadata API. It is public, ungated, and contains the DeBERTa classification weights, tokenizer/config files, `label_mapping.json`, metrics, and model card.
 - The repository metadata reports no linked Hugging Face Space. The model page is therefore the correct `HF_REPO_ID`, not the `ROCKETRIDE_CLASSIFIER_URL`: it does not expose PaperDiff's required `POST /score_batch` wrapper.
 - The remaining classifier action is unchanged: deploy `ml/serving/` as a Docker Space, verify `/health` and `/score_batch`, then configure the resulting `https://<space>.hf.space` origin in RocketRide Cloud.
+
+## 2026-07-17 14:27 PDT — Real local classifier and deployment preflight pass
+
+- Downloaded the public 738 MB `o0meerkat0o/paperdiff-verifier-v1` artifact into the local Hugging Face cache and started `ml/serving/app.py` with the installed FastAPI/PyTorch/Transformers runtime. No model weight, token, or fetched response was added to Git.
+- Verified `GET /health` returned HTTP 200 and a real `POST /score_batch` returned the narrow label/confidence/abstention/model-version contract. The sample result was non-abstained classifier support with approximately 0.996 confidence.
+- Added `pipelines/preflight.mjs` and focused tests. It checks required environment names without printing values, rejects a Hugging Face model-page URL, permits HTTP only for loopback testing, requires HTTPS for remote classifier origins, validates `/health` and `/score_batch`, and optionally validates a saved Compare response.
+- Ran the preflight against the real local service successfully. Ran `make check`: 23 contract/pipeline tests, 14 frontend tests, and 21 core tests passed; lint, type checks, builds, four classifier-boundary tests, Python compilation, and `git diff --check` passed.
+- `ngrok` is installed but has no local authentication configuration, and `cloudflared` is not installed. A public classifier URL still requires either the Hugging Face Space or a user-authorized tunnel account.

@@ -43,6 +43,31 @@ Configure these in the local RocketRide connection and again in RocketRide Cloud
 
 ## Validate locally
 
+Run the pipeline preflight after exporting the values from your local `.env`. It checks required configuration without printing values, probes the classifier using only the claim and exact evidence you supply, and optionally validates a saved Compare response with the canonical contract validator:
+
+```bash
+set -a
+source .env
+set +a
+npm run pipeline:preflight -- \
+  --claim "A claim chosen for this preflight" \
+  --evidence "An exact evidence passage chosen for this preflight" \
+  --compare-response /tmp/paperdiff-compare-response.json
+```
+
+Omit `--compare-response` until you have saved a real RocketRide answer. You may use `PAPERDIFF_PREFLIGHT_CLAIM`, `PAPERDIFF_PREFLIGHT_EVIDENCE`, and `PAPERDIFF_COMPARE_RESPONSE` instead of CLI arguments. Do not paste secrets into arguments; the script reads integration credentials only from the environment and reports their names, never their values.
+
+For the local classifier fallback, start the serving app and point preflight at its loopback origin:
+
+```bash
+ROCKETRIDE_CLASSIFIER_URL=http://127.0.0.1:8000 \
+  npm run pipeline:preflight -- \
+  --claim "A claim chosen for this preflight" \
+  --evidence "An exact evidence passage chosen for this preflight"
+```
+
+Plain HTTP is accepted only for `localhost`, `127.0.0.1`, and `::1`. Every remote classifier origin must use HTTPS.
+
 1. Open the chosen `.pipe` in VS Code with the RocketRide extension.
 2. Configure a local development connection, the provider secrets, and the classifier URL.
 3. Set trace level to `full` so tool calls, parallel branch timing, and exact outputs remain inspectable.

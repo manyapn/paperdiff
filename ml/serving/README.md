@@ -6,9 +6,10 @@ inside a RocketRide pipeline directly. Instead this small FastAPI service hosts
 `paperdiff-verifier-v1` and RocketRide calls it over HTTP via `tool_http_request`.
 
 Weights are not stored in this repo or baked into the Docker image -- they load
-at startup from the private HF Hub repo `ml/6_upload_weights_hf.py` pushes to
-(`o0meerkat0o/paperdiff-verifier-v1` by default), using the same loading logic
-as `ml/7_load_model_from_huggingface.py`.
+at startup from the public, ungated HF Hub repo `ml/6_upload_weights_hf.py`
+pushes to (`o0meerkat0o/paperdiff-verifier-v1` by default), using the same
+loading logic as `ml/7_load_model_from_huggingface.py`. `HF_TOKEN` is optional
+and only needed for authenticated Hub rate limits.
 
 ## Deploy to a free Hugging Face Space
 
@@ -18,10 +19,11 @@ as `ml/7_load_model_from_huggingface.py`.
    free CPU basic.
 3. Push this `ml/serving/` directory's runtime files (`app.py`, `boundary.py`,
    `requirements.txt`, and `Dockerfile`) to the Space's git repo.
-4. In the Space's **Settings > Repository secrets**, add `HF_TOKEN` -- a
-   **read-scoped** token (https://huggingface.co/settings/tokens), not the
-   write token used to upload weights. If the model repo ID differs from the
-   default, also set `HF_REPO_ID`.
+4. No Hugging Face secret is required for the default public, ungated model.
+   Optionally add a **read-scoped** `HF_TOKEN` in **Settings > Repository
+   secrets** for authenticated Hub rate limits; never use the write token used
+   to upload weights. If the model repo ID differs from the default, also set
+   `HF_REPO_ID`.
 5. Wait for the Space to build. Note the Space's public URL, e.g.
    `https://<your-username>-paperdiff-verifier.hf.space`.
 
