@@ -50,24 +50,80 @@ Each side must contain a non-empty `url` or `claim`. URL inputs may also be DOI 
       "right_value": "string",
       "rationale": "string",
       "drives_verdict": true,
-      "evidence_status": "Grounded | Qualified | Needs review",
+      "evidence_status": "Grounded | Qualified | Flagged for correction | Needs review | Blocked",
       "evidence_chain": ["string"],
-      "left_passage": { "pre": "string", "span": "string", "post": "string" },
-      "right_passage": { "pre": "string", "span": "string", "post": "string" },
+      "left_passage": {
+        "source_url": "https://…",
+        "span_id": "string",
+        "pre": "string",
+        "span": "exact source text",
+        "post": "string"
+      },
+      "right_passage": {
+        "source_url": "https://…",
+        "span_id": "string",
+        "pre": "string",
+        "span": "exact source text",
+        "post": "string"
+      },
+      "left_provenance": {
+        "passed": true,
+        "checks": {
+          "source_origin": true,
+          "fetched": true,
+          "identity_match": true,
+          "passage_match": true,
+          "span_specific": true
+        },
+        "failure_reasons": []
+      },
+      "right_provenance": {
+        "passed": true,
+        "checks": {
+          "source_origin": true,
+          "fetched": true,
+          "identity_match": true,
+          "passage_match": true,
+          "span_specific": true
+        },
+        "failure_reasons": []
+      },
+      "verifier": {
+        "kind": "classifier | prompted_llm",
+        "label": "supports | contradicts | insufficient",
+        "confidence": 0.93,
+        "abstained": false,
+        "model_version": "string"
+      },
       "verifier_rationale": "string",
       "verdict_impact": "string"
     }
   ],
   "verdict": {
     "headline": "string",
-    "explanation": "string"
+    "explanation": "string",
+    "citations": ["https://…", "https://…"]
   },
   "synthesis": "string",
+  "synthesis_citations": ["https://…", "https://…"],
   "evidence_summary": "string",
   "trace": [
-    { "stage": "string", "status": "string", "detail": "string" }
-  ]
+    {
+      "stage": "retrieve-left",
+      "status": "complete | blocked | review",
+      "detail": "string",
+      "provider": "linkup",
+      "latency_ms": 123,
+      "source_url": "https://…"
+    }
+  ],
+  "trace_id": "string",
+  "pipeline_version": "paperdiff-compare-v1"
 }
 ```
 
-`left`, `right`, `dimensions`, and `verdict` are required. Missing scientific fields remain blank or `Needs review`; the frontend never invents them. Non-2xx responses should return `{ "error": "safe message" }` or `{ "message": "safe message" }`.
+The authoritative schemas are `schemas/compare-request.schema.json` and `schemas/compare-response.schema.json`. Successful responses contain 8-10 unique dimensions and completed Linkup retrieval trace entries for both sides.
+
+`Grounded` is valid only when both deterministic provenance objects pass and a non-abstained trained classifier returns `supports` at confidence 0.85 or higher. Prompted-LLM fallback support is capped at `Qualified`. If either provenance gate fails, the row is `Blocked` regardless of verifier confidence. A contradicted extraction is `Flagged for correction`; insufficient or abstained verification is `Needs review`.
+
+Missing scientific fields remain blank. When no exact passage exists, the corresponding passage is `null`, passage checks fail, and the row is `Blocked`; the frontend never invents values or evidence. Non-2xx responses should return `{ "error": "safe message" }` or `{ "message": "safe message" }`.

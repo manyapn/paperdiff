@@ -21,7 +21,7 @@ Keep one person in each lane. P0 tasks are ordered to minimize cross-team blocki
 
 ### P0
 
-- [ ] Install the RocketRide VS Code extension and record current node/config names.
+- [x] Install the RocketRide VS Code extension and record current node/config names.
 - [ ] Implement Linkup fetch from official SDK docs and save raw responses outside Git.
 - [ ] Save real retrieval responses for backend contract tests; never ship them in the frontend.
 - [ ] Implement one shared extractor over the stable paper schema.
@@ -31,8 +31,8 @@ Keep one person in each lane. P0 tasks are ordered to minimize cross-team blocki
 
 ### P1
 
-- [ ] Add three Challenge scouts: contradiction, replication, and reassessment.
-- [ ] Add the seven-dimension comparison-fit ranking rubric.
+- [x] Add three Challenge scouts: contradiction, replication, and reassessment.
+- [x] Add the seven-dimension comparison-fit ranking rubric.
 
 ## Verification and evaluation lane
 

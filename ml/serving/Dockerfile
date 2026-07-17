@@ -5,7 +5,7 @@ WORKDIR /app
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
-COPY app.py .
+COPY app.py boundary.py ./
 
 # HF_REPO_ID defaults to o0meerkat0o/paperdiff-verifier-v1 (see app.py).
 # HF_TOKEN must be set as a Space secret (Settings > Repository secrets) --

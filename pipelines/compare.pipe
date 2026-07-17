@@ -1,0 +1,181 @@
+{
+  "components": [
+    {
+      "id": "webhook_1",
+      "provider": "webhook",
+      "name": "Compare request",
+      "config": {
+        "hideForm": true,
+        "mode": "Source",
+        "parameters": {},
+        "type": "webhook"
+      }
+    },
+    {
+      "id": "question_1",
+      "provider": "question",
+      "name": "JSON request to agent question",
+      "config": {},
+      "input": [
+        {
+          "lane": "text",
+          "from": "webhook_1"
+        }
+      ]
+    },
+    {
+      "id": "compare_agent",
+      "provider": "agent_rocketride",
+      "name": "Grounded Compare orchestrator",
+      "config": {
+        "agent_description": "Compares two scientific claims or papers using only live Linkup retrieval, exact cited passages, deterministic provenance checks, and a symmetric extraction schema.",
+        "max_waves": 12,
+        "parameters": {},
+        "instructions": [
+          "COMPARE ONLY. The incoming question is a JSON string with left and right objects. Each side has url, claim, and use_detected_conclusion. Reject the request if either side lacks both a non-empty URL and a non-empty claim.",
+          "LIVE GROUNDING IS MANDATORY. For each side, call Linkup through the connected MCP tools. If a URL or DOI is supplied, resolve its canonical paper identity when needed and fetch it. If only a claim is supplied, search for a primary scientific source, then fetch the selected source. In the first tool wave, issue the independent left and right Linkup calls in parallel. Never answer from model memory and never use a fabricated or hardcoded paper result.",
+          "SOURCE POLICY. Prefer DOI/publisher pages, PubMed or PMC, arXiv, official journal correction pages, and other primary open-web sources. Every surfaced title, methodological value, verdict premise, and synthesis premise must retain an HTTPS source URL. If paper identity is ambiguous, fetched content is unavailable, or the selected passage cannot be found in the fetched text, fail closed.",
+          "RAW RETRIEVAL. Keep the complete Linkup search and fetch results in run memory and the RocketRide trace. Never remove those memory keys. Do not copy full fetched documents into the final response; return exact spans and URLs only.",
+          "SYMMETRIC EXTRACTION. Apply the identical schema to both sides, using these fixed eight fields: population, intervention_or_exposure, comparator, outcome, time_horizon, design, measurement, and analysis. Emit exactly these eight unique dimensions in this order. Do not silently substitute a different field on one side. Missing fields remain blank and require review or blocking; do not infer them.",
+          "EXACT PASSAGES. For every non-empty extracted value, retain one exact passage from the fetched text with source_url, a stable span_id, and short pre/span/post context. The span must be copied exactly and contain at least four words. Never paraphrase inside span.",
+          "PYTHON TOOL CALL SHAPE. Every python.execute invocation MUST include one non-empty code string. Never call it with batch, data, left, right, or another top-level argument instead of code. Embed the values to validate as Python literals inside code, perform the checks in that code, and assign the returned value to a variable named result. If any Python call fails, stop the successful-response path.",
+          "DETERMINISTIC PROVENANCE. Before semantic support judgment, call python.execute with non-empty code containing both sides' candidates and fetched texts as literals. The code must normalize Unicode with NFKC, remove soft hyphens, collapse whitespace, lowercase for comparison, normalize DOI prefixes, and calculate five booleans: source_origin is Linkup or user, fetch completed, title and expected DOI identity match, normalized exact span occurs in normalized fetched text, and span_id exists with a span of at least four words. Set passed to the conjunction and assign the validation batch to result with explicit failure_reasons. This computation is separate from semantic support judgment.",
+          "FAIL CLOSED. If either provenance result for a dimension fails, evidence_status is Blocked and verifier confidence must not override it. A contradicted extracted claim is Flagged for correction. Insufficient evidence or abstention is Needs review.",
+          "CLASSIFIER AFTER PROVENANCE. Only after the deterministic provenance Python call succeeds, call classifier.http_request at most once with method POST, url ${ROCKETRIDE_CLASSIFIER_URL}/score_batch, body_json {pairs:[...]}, and timeout 90. Build score_keys and pairs in the fixed eight-dimension order, including only dimensions whose left and right provenance both pass. For each included dimension, claim is its concise methodological rationale and evidence is the exact string LEFT: <left span> followed by RIGHT: <right span>. If score_keys is empty, skip the classifier because every row is already Blocked. Never call the classifier before provenance, never reorder the batch, and never send paper URLs, authors, full fetched pages, or raw Linkup responses.",
+          "CLASSIFIER RESPONSE GATE. Accept classifier output only for an HTTP success with parsed JSON.results. Require results.length to equal score_keys.length and bind result index i only to score_keys[i]; never sort either array. For every result require label supports, contradicts, or insufficient; finite confidence from 0 to 1; boolean abstained; and a non-empty model_version. Retain only label, confidence, abstained, and model_version, discard product_state, probs, headers, body text, and every other service field, then set verifier.kind to classifier. A missing, extra, reordered, malformed, or invalid result invalidates the entire classifier batch: provenance-failed rows stay Blocked and every provenance-passed row becomes Needs review with the deterministic verifier sentinel {kind:'classifier',label:'insufficient',confidence:0,abstained:true,model_version:'classifier-invalid-response-v1'}. This sentinel records a classifier-lane failure, not a model judgment, and can never be Grounded.",
+          "VERIFICATION FALLBACK. Only when the classifier endpoint or HTTP tool is unavailable, times out, or returns a non-success HTTP status, judge the same ordered claim/evidence pairs with the prompted LLM fallback. Set verifier.kind to prompted_llm and model_version to rocketride-prompted-verifier-v1. Prompted verification can NEVER emit Grounded; prompted supports is at most Qualified. Record the classifier failure and fallback in trace. Do not use prompted semantic fallback for a malformed successful classifier response; that case is Needs review.",
+          "SCIENTIFIC DIFF. Classification is exactly equivalent, different, incompatible, or review. Distinguish an apparent contradiction caused by scope or methods from a genuine unresolved conflict. drives_verdict is true only for dimensions actually used in the verdict. The final synthesis must be jointly supportable by the cited passages and must not introduce new factual claims.",
+          "OBSERVABILITY. Include trace entries for left and right Linkup retrieval, both extractions, provenance validation, alignment, verification, and verdict construction. Each entry has stage, status, detail, provider, latency_ms, and source_url when applicable. Use stage names containing left or right for their respective Linkup retrieval entries.",
+          "COMPACT INTERMEDIATE ONLY. Do not hand-author the final frontend response. Maintain an internal draft with only: trace_id; left/right paper identity; for each of the fixed eight keys, label, extracted values, classification, rationale, drives_verdict, two exact passages, the two deterministic check objects returned by Python, verification_source classifier or prompted_llm or classifier_invalid, retained verifier label/confidence/abstention/model_version/rationale, and verdict impact; verdict headline/explanation; synthesis; evidence summary; and observed trace entries. Do not add evidence_status, provenance wrappers, verifier objects, evidence_chain, citation arrays, pipeline_version, or passage counts yourself; the final Python builder owns those derived fields.",
+          "RESPONSE CONTRACT. The cloud model cannot read repository files, so the final Python builder must emit this literal shape with no aliases or extra keys. Top level: {trace_id:string,pipeline_version:'paperdiff-compare-v1',left:Paper,right:Paper,dimensions:Dimension[8],verdict:{headline:string,explanation:string,citations:https_url[2+]},synthesis:string,synthesis_citations:https_url[2+],evidence_summary:string,trace:Trace[1+]}. Paper is exactly {title:string,authors:string[],venue:string,year:integer|null,source_url:https_url,passages:integer>=1}; never return request fields url, claim, or use_detected_conclusion in Paper. Dimension is exactly {key:string,label:string,classification:'equivalent'|'different'|'incompatible'|'review',left_value:string,right_value:string,rationale:string,drives_verdict:boolean,evidence_status:'Grounded'|'Qualified'|'Flagged for correction'|'Needs review'|'Blocked',evidence_chain:string[],left_passage:Passage|null,right_passage:Passage|null,left_provenance:Provenance,right_provenance:Provenance,verifier:Verifier,verifier_rationale:string,verdict_impact:string}. Passage is exactly {source_url:https_url,span_id:string,pre:string,span:string,post:string}. Provenance is exactly {passed:boolean,checks:{source_origin:boolean,fetched:boolean,identity_match:boolean,passage_match:boolean,span_specific:boolean},failure_reasons:string[]}. Verifier is exactly {kind:'classifier'|'prompted_llm',label:'supports'|'contradicts'|'insufficient',confidence:number_0_to_1,abstained:boolean,model_version:string}. Trace is exactly {stage:string,status:'complete'|'blocked'|'review',detail:string,provider:string,latency_ms:number,source_url?:https_url}.",
+          "DETERMINISTIC FINAL BUILDER. Call python.execute one final time with a non-empty code string containing only the compact draft as a literal plus deterministic builder logic. The code must: require the eight fixed keys in order; construct Paper objects and count their non-null exact passages; construct each Provenance.passed as the conjunction of its five checks and derive failure_reasons; construct verifier.kind as classifier from a fully valid ordered classifier batch, use the fixed abstained classifier-invalid-response-v1 sentinel only for classifier_invalid, and construct prompted_llm only from endpoint-unavailable fallback; set evidence_status in strict precedence to Blocked when either provenance fails, Needs review for classifier_invalid, Flagged for correction for contradicts, Needs review for insufficient or abstained, Grounded only for classifier supports with confidence at least 0.85 and both provenance gates passed, and Qualified for every other supports result including every prompted result; derive evidence_chain from the two extracted values and exact spans; set both verdict citations and synthesis_citations to the two paper HTTPS URLs; set pipeline_version; verify all passage URLs match their paper, spans have at least four words, citations are HTTPS, completed Linkup trace stages exist for left and right, and no prompted, abstained, or malformed classifier result is Grounded; reject every extra or missing key; then set result=json.dumps(response,ensure_ascii=False,separators=(',',':')). If any invariant fails, raise an exception and do not return a successful answer.",
+          "OUTPUT. Return exactly the JSON string produced by the successful deterministic final Python builder, with no Markdown fence, Python representation, or surrounding prose. It must match contracts/schemas/compare-response.schema.json exactly: trace_id, pipeline_version, left, right, exactly eight dimensions, verdict with at least two citation URLs, synthesis, synthesis_citations, evidence_summary, and trace. Set pipeline_version to paperdiff-compare-v1. Use null left_passage or right_passage only when no exact passage exists, and then make the row Blocked with failed passage_match and span_specific checks."
+        ]
+      },
+      "input": [
+        {
+          "lane": "questions",
+          "from": "question_1"
+        }
+      ]
+    },
+    {
+      "id": "memory_1",
+      "provider": "memory_internal",
+      "name": "Run-scoped retrieval memory",
+      "config": {
+        "type": "memory_internal"
+      },
+      "control": [
+        {
+          "classType": "memory",
+          "from": "compare_agent"
+        }
+      ]
+    },
+    {
+      "id": "linkup_1",
+      "provider": "mcp_client",
+      "name": "Linkup live search and fetch",
+      "config": {
+        "profile": "streamable_http",
+        "streamable_http": {
+          "serverName": "linkup",
+          "transport": "streamable-http",
+          "endpoint": "https://mcp.linkup.so/mcp",
+          "headers": {},
+          "bearer": "${ROCKETRIDE_LINKUP_KEY}"
+        }
+      },
+      "control": [
+        {
+          "classType": "tool",
+          "from": "compare_agent"
+        }
+      ]
+    },
+    {
+      "id": "python_1",
+      "provider": "tool_python",
+      "name": "Deterministic provenance validator",
+      "config": {
+        "serverName": "python",
+        "timeout": 20,
+        "allowedModules": []
+      },
+      "control": [
+        {
+          "classType": "tool",
+          "from": "compare_agent"
+        }
+      ]
+    },
+    {
+      "id": "classifier_http",
+      "provider": "tool_http_request",
+      "name": "Restricted claim-evidence classifier",
+      "config": {
+        "type": "tool_http_request",
+        "serverName": "classifier",
+        "allowGET": false,
+        "allowPOST": true,
+        "allowPUT": false,
+        "allowPATCH": false,
+        "allowDELETE": false,
+        "allowHEAD": false,
+        "allowOPTIONS": false,
+        "urlWhitelist": [
+          {
+            "whitelistPattern": "^${ROCKETRIDE_CLASSIFIER_URL}/score_batch$"
+          }
+        ],
+        "rateLimitPerSecond": 1,
+        "rateLimitPerMinute": 20,
+        "maxConcurrentRequests": 1
+      },
+      "control": [
+        {
+          "classType": "tool",
+          "from": "compare_agent"
+        }
+      ]
+    },
+    {
+      "id": "llm_1",
+      "provider": "llm_gemini",
+      "name": "Compare reasoning model",
+      "config": {
+        "profile": "gemini-3_1-flash-lite-preview",
+        "gemini-3_1-flash-lite-preview": {
+          "apikey": "${ROCKETRIDE_GEMINI_KEY}"
+        },
+        "parameters": {}
+      },
+      "control": [
+        {
+          "classType": "llm",
+          "from": "compare_agent"
+        }
+      ]
+    },
+    {
+      "id": "response_1",
+      "provider": "response_answers",
+      "name": "Compare JSON response",
+      "config": {
+        "laneName": "answers"
+      },
+      "input": [
+        {
+          "lane": "answers",
+          "from": "compare_agent"
+        }
+      ]
+    }
+  ],
+  "description": "PaperDiff Compare: live Linkup retrieval, symmetric scientific extraction, deterministic provenance checks, and evidence-backed methodological alignment.",
+  "source": "webhook_1",
+  "project_id": "d9358490-8651-4194-96aa-3b74999f03d0",
+  "viewport": { "x": 0, "y": 0, "zoom": 1 },
+  "version": 1
+}

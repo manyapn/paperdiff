@@ -32,8 +32,22 @@ class Component extends DCLogic {
       short: paper.short || paper.title || fallback,
       metaLine: paper.meta_line || paper.metaLine || '',
       domain: paper.domain || '',
-      sourceUrl: paper.source_url || paper.url || '',
+      sourceUrl: this.safeHttpsUrl(paper.source_url || paper.url),
     };
+  }
+
+  safeHttpsUrl(value) {
+    if (typeof value !== 'string') return '';
+    try {
+      const url = new URL(value);
+      return url.protocol === 'https:' ? url.href : '';
+    } catch {
+      return '';
+    }
+  }
+
+  isDoi(value) {
+    return /^(?:https?:\/\/(?:dx\.)?doi\.org\/)?10\.\d{4,9}\/\S+$/i.test(String(value || '').trim());
   }
 
   normalizeDimension(dimension, index) {
@@ -68,6 +82,10 @@ class Component extends DCLogic {
   normalizeCandidate(candidate, index) {
     const relation = candidate.relationship_type || candidate.rel || 'Comparable evidence';
     const fit = String(candidate.fit || candidate.comparison_fit || 'REVIEW').toUpperCase();
+    const url = this.safeHttpsUrl(candidate.url || candidate.source_url);
+    const citationUrls = Array.isArray(candidate.citations)
+      ? [...new Set(candidate.citations.map(value => this.safeHttpsUrl(value)).filter(Boolean))]
+      : [];
     return {
       ...candidate,
       rel: relation,
@@ -80,7 +98,11 @@ class Component extends DCLogic {
       year: candidate.year || '',
       why: candidate.why || candidate.explanation || '',
       dims: candidate.dimensions || [],
-      url: candidate.url || candidate.source_url || '',
+      url,
+      citationLinks: citationUrls.map((citationUrl, citationIndex) => ({
+        url: citationUrl,
+        label: citationUrl === url ? 'Candidate source' : 'Source evidence ' + (citationIndex + 1),
+      })),
     };
   }
 
@@ -126,7 +148,15 @@ class Component extends DCLogic {
     this.setState({ chStage: 'run', scouts: [1,1,1], candidatesReady: false, error: null });
     try {
       const data = await this.post('challengeEndpoint', { input: this.state.chUrl });
-      if (!data || !Array.isArray(data.candidates)) {
+      const sourceUrl = this.safeHttpsUrl(data && data.source && data.source.source_url);
+      const candidatesAreCited = data && Array.isArray(data.candidates) && data.candidates.every(candidate => {
+        const candidateUrl = this.safeHttpsUrl(candidate && (candidate.url || candidate.source_url));
+        const citations = Array.isArray(candidate && candidate.citations)
+          ? candidate.citations.map(value => this.safeHttpsUrl(value))
+          : [];
+        return candidateUrl && citations.includes(sourceUrl) && citations.includes(candidateUrl);
+      });
+      if (!sourceUrl || !candidatesAreCited) {
         throw new Error('The Challenge response does not match the PaperDiff contract.');
       }
       this.candidatesData = data.candidates.map((item, index) => this.normalizeCandidate(item, index));
@@ -194,6 +224,8 @@ class Component extends DCLogic {
           bg: i === 2 ? '#E9F0FF' : '#FFFFFF', color: i === 2 ? '#1746B7' : '#566173', border: i === 2 ? '#2357D9' : '#DCE3EC' })),
         passA: drawerRow.passA || { pre: '', span: '', post: '' },
         passB: drawerRow.passB || { pre: '', span: '', post: '' },
+        passAUrl: this.safeHttpsUrl((drawerRow.passA || {}).source_url),
+        passBUrl: this.safeHttpsUrl((drawerRow.passB || {}).source_url),
         verifier: drawerRow.verifier || '',
         whyVerdict: drawerRow.whyVerdict || '' };
     }
@@ -205,8 +237,8 @@ class Component extends DCLogic {
       isChallengeRun: !isCompare && s.chStage === 'run',
       compareTabBg: isCompare ? tabOn.bg : tabOff.bg, compareTabColor: isCompare ? tabOn.color : tabOff.color, compareTabShadow: isCompare ? tabOn.shadow : tabOff.shadow,
       challengeTabBg: !isCompare ? tabOn.bg : tabOff.bg, challengeTabColor: !isCompare ? tabOn.color : tabOff.color, challengeTabShadow: !isCompare ? tabOn.shadow : tabOff.shadow,
-      toCompare: () => this.setState({ mode: 'compare' }),
-      toChallenge: () => this.setState({ mode: 'challenge' }),
+      toCompare: () => this.setState({ mode: 'compare', error: null }),
+      toChallenge: () => this.setState({ mode: 'challenge', error: null }),
       helpOpen: s.helpOpen, toggleHelp: (e) => { e.preventDefault(); this.setState({ helpOpen: !s.helpOpen }); },
       traceOpen: s.traceOpen, toggleTrace: (e) => { e.preventDefault(); this.setState({ traceOpen: !s.traceOpen }); },
       aUrl: s.aUrl, bUrl: s.bUrl, aClaim: s.aClaim, bClaim: s.bClaim, aUse: s.aUse, bUse: s.bUse,
@@ -234,9 +266,13 @@ class Component extends DCLogic {
       openExposure: (e) => { e.preventDefault(); this.setState({ drawerKey: 'exposure' }); },
       openOutcome: (e) => { e.preventDefault(); this.setState({ drawerKey: 'outcome' }); },
       copyLabel: s.copied ? 'Copied' : 'Copy careful synthesis',
+      shareLabel: s.copied ? 'Copied' : 'Share',
       copySynthesis: () => { navigator.clipboard && navigator.clipboard.writeText(result.synthesis || ''); this.setState({ copied: true }); setTimeout(() => this.setState({ copied: false }), 1600); },
       resetCompare: () => { this.rows = []; this.eqRows = []; this.setState({ stage: 'input', aUrl: '', bUrl: '', aClaim: '', bClaim: '', aSrc: null, bSrc: null, result: null, error: null, drawerKey: null, eqOpen: false }); },
       chUrl: s.chUrl, chSrc: s.chSrc,
+      chDisplay: s.chSrc
+        ? { title: s.chSrc.title, metaText: [s.chSrc.venue, s.chSrc.year].filter(Boolean).join(' · '), sourceUrl: s.chSrc.sourceUrl || '' }
+        : { title: s.chUrl, metaText: 'Resolving source…', sourceUrl: '' },
       onChUrl: (e) => this.setState({ chUrl: e.target.value, chSrc: null, error: null }),
       challengeDisabled: !canChallenge,
       challengeCursor: canChallenge ? 'pointer' : 'not-allowed',
@@ -256,9 +292,26 @@ class Component extends DCLogic {
       synthesisText: result.synthesis || '',
       paperAHeading: s.aSrc ? (s.aSrc.short || s.aSrc.title) : 'Paper A',
       paperBHeading: s.bSrc ? (s.bSrc.short || s.bSrc.title) : 'Paper B',
-      traceRows: Array.isArray(result.trace) ? result.trace.map(item => ({ text: typeof item === 'string' ? item : ((item.stage || '') + ' · ' + (item.detail || item.status || '')) })) : [],
+      traceRows: Array.isArray(result.trace) && result.trace.length
+        ? result.trace.map(item => ({ text: typeof item === 'string' ? item : ((item.stage || '') + ' · ' + (item.detail || item.status || '')) }))
+        : [{ text: 'Waiting for the pipeline trace…' }],
       candidatesReady: s.candidatesReady,
-      candidates: this.candidatesData.map(c => ({ ...c, onCompare: () => this.setState({ mode: 'compare', stage: 'input', aUrl: s.chUrl, bUrl: c.url || '', aSrc: s.chSrc, bSrc: null, error: null }) })),
+      candidates: this.candidatesData.map(c => ({ ...c, onCompare: () => {
+        const originalInput = String(s.chUrl || '').trim();
+        const resolvedSourceUrl = this.safeHttpsUrl(s.chSrc && s.chSrc.sourceUrl);
+        const originalIsSource = Boolean(this.safeHttpsUrl(originalInput) || this.isDoi(originalInput));
+        this.setState({
+          mode: 'compare',
+          stage: 'input',
+          aUrl: resolvedSourceUrl || (originalIsSource ? originalInput : ''),
+          aClaim: originalIsSource ? '' : originalInput,
+          bUrl: c.url || '',
+          bClaim: '',
+          aSrc: s.chSrc,
+          bSrc: null,
+          error: null,
+        });
+      } })),
     };
   }
 }
