@@ -7,37 +7,30 @@ This is the teammate-facing map of the repository: what exists, what each compon
 PaperDiff has three moving parts:
 
 ```text
-React frontend
-    ↓ calls one deployed workflow
+Supplied interactive HTML frontend
+    ↓ will call one deployed workflow
 RocketRide pipeline + Linkup retrieval
     ↓ sends (claim, exact evidence passage)
 Lightweight classifier trained in Google Colab
     ↓ supports / contradicts / insufficient + confidence
 RocketRide returns diff + verdict + evidence states
     ↓
-React frontend renders the result
+Interactive frontend renders the result
 ```
 
-There is no FastAPI service, separate Node server, database, or Docker setup. RocketRide is the hosted backend/orchestrator. The frontend is a static Vite app deployed through GitHub Pages. The model is trained separately in Colab and exposed to the pipeline through the small contract in `ml/export-contract.md`.
+There is no FastAPI service, separate Node server, database, or Docker setup. RocketRide is the hosted backend/orchestrator. The supplied self-contained HTML bundle is the only frontend; Vite is just its local server/build wrapper. The model is trained separately in Colab and exposed to the pipeline through the small contract in `ml/export-contract.md`.
 
 ## File structure
 
 ```text
 paperdiff/
 ├── apps/
-│   └── web/                              # Static React/Vite product UI
-│       ├── src/
-│       │   ├── App.tsx                   # Compare screen and interactions
-│       │   ├── styles.css                # Responsive visual system
-│       │   ├── types.ts                  # Compare response types
-│       │   └── lib/
-│       │       ├── demoComparison.ts     # Synthetic end-to-end demo fixture
-│       │       ├── pipelineClient.ts      # Calls deployed RocketRide workflow
-│       │       ├── pipelineClient.test.ts
-│       │       ├── presentation.ts       # UI-only formatting helpers
-│       │       └── presentation.test.ts
+│   └── web/                              # Supplied self-contained product UI
+│       ├── index.html                    # Styles, assets, logic, and demo data
+│       ├── tests/frontend.test.ts        # Bundle smoke/feature checks
 │       ├── package.json
-│       ├── vite.config.ts
+│       ├── tsconfig.json
+│       ├── vite.config.ts                # Thin static build wrapper
 │       └── AGENTS.md                     # Frontend-specific agent rules
 │
 ├── packages/
@@ -90,7 +83,6 @@ paperdiff/
 ├── .github/workflows/ci.yml              # Tests, build, GitHub Pages deploy
 ├── AGENTS.md                              # Repository-wide agent rules
 ├── CLAUDE.md                              # Repository-wide Claude rules
-├── .env.example                          # Public pipeline URL only; no secrets
 ├── Makefile                               # Thin aliases for npm commands
 ├── package.json                           # npm workspace root
 └── README.md                              # Quick start
@@ -98,18 +90,18 @@ paperdiff/
 
 ## What works now
 
-- The Compare UI runs locally and builds as a static site.
-- The checked-in synthetic pair exercises the complete UI without any service keys.
-- The UI displays eight comparison dimensions, gray/yellow/red backend classifications, provenance chains, a verdict, synthesis, and pipeline trace.
-- `pipelineClient.ts` sends the stable request shape to a RocketRide URL once configured.
+- The supplied Compare and Challenge UI runs locally and builds as a static site.
+- Its embedded demo data exercises the complete interface without service keys.
+- The UI includes input resolution, analysis animation, methodological diffs, provenance drawers, verdict, careful synthesis, pipeline trace, and Challenge candidates.
 - Deterministic provenance code validates source origin, fetch success, paper identity, exact normalized passage existence, and span specificity.
 - Classifier policy maps every model result to a user-facing state and blocks model confidence from overriding failed provenance.
-- Tests cover the provenance gate, all classifier mappings, fixture presentation, and RocketRide client behavior.
+- Tests cover the frontend bundle features, provenance gate, and all classifier mappings.
 - GitHub Actions type-checks, tests, builds, and deploys the static site from `main`.
 
 ## What remains to build
 
 - The actual RocketRide workflow and deployed Compare endpoint
+- Replacing the supplied frontend's simulated resolve/analyze timers with the live endpoint
 - Linkup fetch/search nodes with raw-response preservation
 - Symmetric paper extraction and dimension alignment
 - Connection from RocketRide to the trained classifier artifact or endpoint
@@ -193,17 +185,18 @@ The static demo deploys from `main` through `.github/workflows/ci.yml`. It does 
 For the live pipeline:
 
 1. Deploy Compare through RocketRide.
-2. Add the public Compare endpoint as the GitHub Actions/environment value `VITE_ROCKETRIDE_PIPELINE_URL`.
-3. Keep `LINKUP_API_KEY`, `ROCKETRIDE_APIKEY`, model-hosting credentials, and LLM fallback keys server-side—never in `VITE_*` variables.
-4. Rebuild the frontend; `pipelineClient.ts` will call the configured workflow.
+2. Replace the simulated resolve/analyze functions in `apps/web/index.html` with calls to that endpoint.
+3. Keep `LINKUP_API_KEY`, `ROCKETRIDE_APIKEY`, model-hosting credentials, and LLM fallback keys server-side.
+4. Preserve the embedded demo as an offline fallback for judging reliability.
 
 ## Contract boundaries
 
 - `contracts/examples/compare-request.json` is the workflow request.
-- `apps/web/src/types.ts` is the current response shape consumed by the UI.
-- `apps/web/src/lib/demoComparison.ts` is the response fixture used for parallel frontend work.
+- `apps/web/index.html` currently embeds the interactive demo data and expected presentation fields.
 - `packages/core/src/types.ts` is the narrow claim-evidence classifier/provenance contract.
 - `ml/export-contract.md` is the handoff from Colab training to pipeline inference.
+
+Before live wiring, extract a stable Compare response schema from the embedded demo into `contracts/` and test RocketRide output against it.
 
 The frontend renders classifications returned by the pipeline. It must not re-run scientific comparison logic in the browser.
 

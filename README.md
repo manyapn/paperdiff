@@ -6,7 +6,7 @@ Start with the [repository guide](docs/repository-guide.md). It explains the com
 
 ## Simple architecture
 
-- `apps/web`: static React/Vite Compare interface
+- `apps/web`: supplied self-contained interactive HTML interface, built by Vite
 - RocketRide + Linkup: hosted retrieval and comparison pipeline
 - `packages/core`: deterministic provenance and classifier-to-product-state policy
 - `notebooks` + `ml`: Google Colab claim-evidence classifier
@@ -40,7 +40,7 @@ The deterministic provenance gate always runs first. Failed provenance is Blocke
 
 ## Deployment
 
-The static demo deploys from `main` through GitHub Pages. Once the RocketRide Compare workflow is deployed, configure `VITE_ROCKETRIDE_PIPELINE_URL` during the frontend build. Keep all service and model-hosting secrets server-side.
+The static demo deploys from `main` through GitHub Pages. The supplied HTML currently contains its own demo interactions and data. Connecting its actions to the RocketRide Compare workflow is a separate integration task; all service and model-hosting secrets stay server-side.
 
 ## Team docs
 

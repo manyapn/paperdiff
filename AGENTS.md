@@ -23,9 +23,9 @@ Ship Compare mode first: two grounded claims in, methodological alignment and an
 
 ## Shared boundaries
 
-- `apps/web/src/types.ts` and `contracts/` define the Compare boundary.
+- `contracts/` defines the future RocketRide Compare boundary.
 - `packages/core/src/types.ts` defines the narrow classifier/provenance boundary.
-- `apps/web/src/lib/demoComparison.ts` is the cross-team response fixture.
+- `apps/web/index.html` is the supplied self-contained UI and embedded demo fixture.
 - Changes to shared contracts need review from at least one other component owner.
 - Do not commit secrets, raw licensed corpora, model weights, or fetched paywalled text.
 - Run `make check` before handoff when dependencies are installed.
