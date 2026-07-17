@@ -1,10 +1,10 @@
 # Shared contracts
 
-PaperDiff has two intentionally separate contracts:
+The static frontend calls two RocketRide endpoints configured in `apps/web/public/config.js`. It has no scientific fixtures or fallback results: all paper identities, passages, candidates, dimensions, evidence states, verdicts, synthesis, and trace entries must come from these responses.
 
-1. Compare workflow: `examples/compare-request.json` in; a stable response schema still needs to be extracted from the supplied UI's embedded demo data before live wiring.
-2. Claim-evidence classifier: the input/output in `packages/core/src/types.ts` and `ml/export-contract.md`.
+- [Compare contract](compare.md) — the MVP pipeline and UI response.
+- [Challenge contract](challenge.md) — optional discovery stage that hands a selected candidate back to Compare.
+- `examples/compare-request.json` — structural request example containing placeholders, not a paper or result fixture.
+- `packages/core/src/types.ts` and `ml/export-contract.md` — narrower classifier/provenance boundary.
 
-`apps/web/index.html` currently contains the complete interactive demo and its embedded data. Before connecting RocketRide, move only the shared request/response shape into `contracts/` and test the workflow output against it. Do not create a second frontend implementation.
-
-The trained classifier does not choose comparison dimensions or the final contradiction verdict. It only checks whether one exact passage supports, contradicts, or is insufficient for one claim.
+The classifier does not choose comparison dimensions or the final contradiction verdict. It only checks whether one exact passage supports, contradicts, or is insufficient for one claim.

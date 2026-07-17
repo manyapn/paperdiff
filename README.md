@@ -20,7 +20,7 @@ npm install
 npm run dev
 ```
 
-Open <http://localhost:5173> and click **Debug disagreement** to run the synthetic interface fixture.
+Open <http://localhost:5173>. The UI stays empty until you enter two inputs and configure the real RocketRide endpoint in `apps/web/public/config.js`.
 
 ## Validate everything
 
@@ -40,7 +40,7 @@ The deterministic provenance gate always runs first. Failed provenance is Blocke
 
 ## Deployment
 
-The static demo deploys from `main` through GitHub Pages. The supplied HTML currently contains its own demo interactions and data. Connecting its actions to the RocketRide Compare workflow is a separate integration task; all service and model-hosting secrets stay server-side.
+The static frontend deploys from `main` through GitHub Pages. It contains no paper, evidence, verdict, or candidate fixtures. Its animations reflect a request in progress, and results render only from RocketRide responses. All service and model-hosting secrets stay server-side.
 
 ## Team docs
 
@@ -50,5 +50,3 @@ The static demo deploys from `main` through GitHub Pages. The supplied HTML curr
 - [Architecture](docs/architecture.md)
 - [Integration checklist](docs/integrations.md)
 - [Demo script](docs/demo-script.md)
-
-The checked-in paper pair is synthetic and must never be presented as peer-reviewed evidence.

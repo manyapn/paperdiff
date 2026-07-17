@@ -16,5 +16,4 @@ Read the verdict, then open one provenance chain from public claim to paper conc
 
 Only after the payoff, open the trace and show parallel extraction, shared schema, deterministic validation, verifier confidence, and honest failure routing.
 
-Before demo day, replace the synthetic fixture with one real open-access pair and prepare two fallbacks. Do not depend on a live external call for the primary demo path.
-
+Before demo day, prevalidate one real open-access pair and two real fallbacks through the deployed pipeline. Keep the frontend free of cached results: if the backend is unavailable, show the honest error state rather than a staged answer.

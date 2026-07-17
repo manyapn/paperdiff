@@ -6,10 +6,10 @@ Keep one person in each lane. P0 tasks are ordered to minimize cross-team blocki
 
 ### P0
 
-- [ ] Confirm the synthetic demo flow on the presentation laptop.
+- [ ] Confirm the live Compare flow on the presentation laptop.
 - [ ] Add URL/DOI/claim input detection and explicit input labels.
 - [ ] Add blocked, qualified, and needs-review evidence treatments.
-- [ ] Add a compact RocketRide trace drawer against recorded trace data.
+- [ ] Confirm the trace drawer renders the RocketRide response exactly.
 - [ ] Run keyboard and narrow-screen passes on the diff expansion flow.
 
 ### P1
@@ -23,7 +23,7 @@ Keep one person in each lane. P0 tasks are ordered to minimize cross-team blocki
 
 - [ ] Install the RocketRide VS Code extension and record current node/config names.
 - [ ] Implement Linkup fetch from official SDK docs and save raw responses outside Git.
-- [ ] Create recorded retrieval fixtures for one golden pair and two fallbacks.
+- [ ] Save real retrieval responses for backend contract tests; never ship them in the frontend.
 - [ ] Implement one shared extractor over the stable paper schema.
 - [ ] Run both extractors concurrently and record stage latency.
 - [ ] Produce eight to ten dimension diffs and the verdict from RocketRide output.
@@ -55,7 +55,7 @@ Keep one person in each lane. P0 tasks are ordered to minimize cross-team blocki
 
 ## Shared integration checkpoints
 
-- **T+90 minutes:** real golden pair fetches and frontend fixture still works.
+- **T+90 minutes:** real golden pair fetches and the frontend contract test passes.
 - **T+3 hours:** extraction response matches the checked-in contract.
 - **T+5 hours:** deterministic provenance blocks a deliberately corrupted quote.
 - **T+6.5 hours:** Compare runs end to end on golden and fallback pairs.
