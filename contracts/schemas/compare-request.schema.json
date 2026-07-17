@@ -1,0 +1,34 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://paperdiff.dev/contracts/compare-request.schema.json",
+  "title": "PaperDiff Compare request",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["left", "right"],
+  "properties": {
+    "left": { "$ref": "#/$defs/input" },
+    "right": { "$ref": "#/$defs/input" }
+  },
+  "$defs": {
+    "input": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["url", "claim", "use_detected_conclusion"],
+      "properties": {
+        "url": {
+          "type": ["string", "null"],
+          "minLength": 1
+        },
+        "claim": {
+          "type": ["string", "null"],
+          "minLength": 1
+        },
+        "use_detected_conclusion": { "type": "boolean" }
+      },
+      "anyOf": [
+        { "properties": { "url": { "type": "string", "minLength": 1 } } },
+        { "properties": { "claim": { "type": "string", "minLength": 1 } } }
+      ]
+    }
+  }
+}

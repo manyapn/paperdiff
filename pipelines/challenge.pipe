@@ -1,0 +1,152 @@
+{
+  "components": [
+    {
+      "id": "challenge_webhook",
+      "provider": "webhook",
+      "name": "Challenge request",
+      "config": {
+        "hideForm": true,
+        "mode": "Source",
+        "parameters": {},
+        "type": "webhook"
+      }
+    },
+    {
+      "id": "challenge_question",
+      "provider": "question",
+      "name": "JSON request to Challenge question",
+      "config": {},
+      "input": [
+        {
+          "lane": "text",
+          "from": "challenge_webhook"
+        }
+      ]
+    },
+    {
+      "id": "challenge_agent",
+      "provider": "agent_rocketride",
+      "name": "Cited Challenge discovery orchestrator",
+      "config": {
+        "agent_description": "Resolves one scientific source, runs three independent live Linkup discovery scouts, validates exact passages, and ranks one candidate per scout using a fixed methodological-fit rubric.",
+        "max_waves": 14,
+        "parameters": {},
+        "instructions": [
+          "CHALLENGE DISCOVERY ONLY. The incoming question is a JSON string with one non-empty input field containing a paper URL, DOI, abstract, or scientific claim. Reject any empty request. Challenge discovers candidates; it does not decide the final scientific contradiction verdict and it must never emit Grounded or call a candidate verified.",
+          "RESOLVE THE SOURCE LIVE. Always call Linkup through the connected MCP tools. Fetch a supplied URL when possible; resolve a DOI or search a claim/abstract to a primary scientific source, then fetch the selected source. Prefer DOI/publisher pages, PubMed or PMC, arXiv, official journal correction pages, and other primary open-web sources. Never use model memory or hardcoded results. If the source identity or fetched text is ambiguous, fail closed instead of returning candidates.",
+          "THREE PARALLEL SCOUTS. Only after source resolution, issue three independent Linkup search calls in the same RocketRide tool wave: (1) closest contradictory result, seeking a primary study whose stated result most directly differs while remaining comparable; (2) direct replication, seeking an explicit replication or close repeated test of the source; and (3) best later reassessment, seeking a later systematic review, meta-analysis, correction, reanalysis, guideline, or authoritative reassessment. Each scout must actively search the live web. Do not reuse one search response as all three scouts.",
+          "FETCH IN PARALLEL. Select the strongest distinct HTTPS candidate from each scout, then issue all three Linkup fetch calls in the same next tool wave. A search snippet is never enough. Each surfaced candidate must have fetched full-page text, a resolved identity, and a URL different from the source and the other candidates. If any required scout cannot produce a provenance-valid fetched candidate, fail the successful-response path closed; do not invent a third result.",
+          "RAW RETRIEVAL AND OBSERVABILITY. Preserve every complete Linkup source search, scout search, and page fetch response in run memory and RocketRide full traces. Do not copy full documents into the final answer or Git. Record trace entries named retrieve-source, scout-contradiction, scout-replication, scout-reassessment, fetch-contradiction, fetch-replication, and fetch-reassessment, with provider linkup, status, latency_ms, detail, and source_url where available.",
+          "RELATIONSHIP EVIDENCE. A relationship label is a cited discovery hypothesis, not a final verdict. For each candidate, retain one exact source passage and one exact candidate passage that explain why it belongs to that scout. Each passage contains source_url, stable span_id, short pre/span/post context, and an exact span of at least four words. citations must include both the resolved source URL and candidate URL. Do not claim the candidate contradicts, replicates, or reassesses the source beyond what those fetched passages support.",
+          "FIXED SEVEN-DIMENSION RUBRIC. Apply the identical fields to every candidate: population, intervention_or_exposure, comparator, outcome, time_horizon, design, and analysis. For every field return source_value, candidate_value, rationale, and exact passages from both papers when present. Never silently substitute a different field. Missing or ambiguous evidence remains blank and uses fit review.",
+          "PYTHON TOOL CALL SHAPE. Every python.execute invocation MUST include one non-empty code string. Never call it with batch, data, source, candidates, or another top-level argument instead of code. Embed the values to validate as Python literals inside code, perform the checks in that code, and assign the returned value to a variable named result. If any Python call fails, stop the successful-response path.",
+          "DETERMINISTIC PROVENANCE FIRST. Before scoring fit, call python.execute with non-empty code containing the source, all candidates, all exact spans, and their fetched texts as literals. The code normalizes Unicode with NFKC, removes soft hyphens, collapses whitespace, lowercases for comparison, and normalizes DOI prefixes. For every passage it calculates source_origin, fetched, identity_match, passage_match, and span_specific; passed is their conjunction and failure_reasons names every failed check. Provenance is separate from semantic methodological fit. A failed or missing passage forces that dimension to review and zero points.",
+          "DETERMINISTIC FIT. After provenance, call python.execute to enforce: match = 1 point with icon '=' and color '#1746B7'; partial = 0.5 with icon '≈' and color '#A65F00'; mismatch = 0 with icon '≠' and color '#A93F35'; review = 0 with icon '?' and color '#566173'. fit_score is the exact sum across seven dimensions. comparison_fit is review if any dimension is review or score is below 3.5; otherwise high for score at least 5.5 and medium for scores from 3.5 through 5.0. Sort candidates by non-increasing fit_score. Fit measures methodological comparability, not textual similarity, study quality, or truth.",
+          "NO CLASSIFIER OR VERDICT. Do not call or simulate the claim-evidence classifier. Do not emit evidence_status, a Compare classification, a final contradiction verdict, or a synthesis. Selecting a candidate sends its URL into the separate Compare pipeline, where symmetric extraction, provenance, semantic verification, and verdict construction run again.",
+          "COMPACT DRAFT ONLY. Do not hand-author the final response. Preserve: source identity plus one exact identity passage and its five checks; for each scout, candidate identity, one exact source relationship passage, one exact candidate relationship passage, their checks, and an explanation; for each of the fixed seven keys, label, two values, rationale, fit, two exact passages, and both check objects; plus observed trace entries. Use the exact scout labels closest contradictory result, direct replication, and best later reassessment. Never use contradiction, replication, or reassessment as the public relationship_type value.",
+          "LITERAL RESPONSE CONTRACT. The cloud model cannot read repository files. The final Python builder must emit exactly {trace_id:string,pipeline_version:'paperdiff-challenge-v1',source:Source,candidates:Candidate[3],trace:Trace[8+]}, with no aliases or extra keys. Source is exactly {title:string,authors:string[],venue:string,year:integer|null,source_url:https_url,passages:integer>=1,identity_passage:Passage,provenance:Provenance}. Candidate is exactly {title:string,authors:string[],venue:string,year:integer|null,url:https_url,relationship_type:'closest contradictory result'|'direct replication'|'best later reassessment',comparison_fit:'high'|'medium'|'review',fit_score:number,explanation:string,citations:https_url[2+],relationship_source_passage:Passage,relationship_candidate_passage:Passage,source_provenance:Provenance,candidate_provenance:Provenance,dimensions:Dimension[7]}. Dimension is exactly {key:string,label:string,fit:'match'|'partial'|'mismatch'|'review',points:0|0.5|1,source_value:string,candidate_value:string,rationale:string,source_passage:Passage|null,candidate_passage:Passage|null,source_provenance:Provenance,candidate_provenance:Provenance,icon:'='|'≈'|'≠'|'?',color:'#1746B7'|'#A65F00'|'#A93F35'|'#566173'}. Passage is exactly {source_url:https_url,span_id:string,pre:string,span:string,post:string}. Provenance is exactly {passed:boolean,checks:{source_origin:boolean,fetched:boolean,identity_match:boolean,passage_match:boolean,span_specific:boolean},failure_reasons:string[]}. Trace is exactly {stage:string,status:'complete'|'blocked'|'review',detail:string,provider:string,latency_ms:number,source_url?:https_url}. The top-level key is trace, an array; never return traces or a keyed trace object.",
+          "FINAL SERIALIZATION GATE. Call python.execute one final time with a non-empty code string containing only the compact draft as a literal plus deterministic builder logic. The code must construct every exact public object above; derive each provenance passed value as the conjunction of its five checks and failure_reasons from false checks; require the source and both relationship passages for every candidate to pass; require the seven fixed keys in order; force fit review and zero points when either dimension passage/provenance fails; otherwise map fit to deterministic points/icon/color; recompute fit_score and comparison_fit; set citations to the source and candidate URLs; map the three scouts to the exact public relationship labels; sort by non-increasing fit_score; require distinct HTTPS URLs; require completed retrieve-source plus all three scout and all three fetch trace stages; reject traces aliases, missing or extra keys, Grounded, evidence_status, verdict, and synthesis; then set result=json.dumps(response,ensure_ascii=False,separators=(',',':')). If any invariant fails, raise an exception and do not return a successful answer.",
+          "OUTPUT. Return exactly the JSON string produced by the successful final Python serialization gate, with no Markdown fence, Python representation, or surrounding prose. It must match contracts/schemas/challenge-response.schema.json exactly: trace_id, pipeline_version paperdiff-challenge-v1, the provenance-validated source, exactly three distinct candidates containing exactly one of each relationship_type, and observable trace entries. Each candidate contains exactly seven unique rubric dimensions and is ordered by fit_score. Never include uncited factual claims or any Grounded label."
+        ]
+      },
+      "input": [
+        {
+          "lane": "questions",
+          "from": "challenge_question"
+        }
+      ]
+    },
+    {
+      "id": "challenge_memory",
+      "provider": "memory_internal",
+      "name": "Challenge retrieval memory",
+      "config": {
+        "type": "memory_internal"
+      },
+      "control": [
+        {
+          "classType": "memory",
+          "from": "challenge_agent"
+        }
+      ]
+    },
+    {
+      "id": "challenge_linkup",
+      "provider": "mcp_client",
+      "name": "Linkup live Challenge search and fetch",
+      "config": {
+        "profile": "streamable_http",
+        "streamable_http": {
+          "serverName": "linkup",
+          "transport": "streamable-http",
+          "endpoint": "https://mcp.linkup.so/mcp",
+          "headers": {},
+          "bearer": "${ROCKETRIDE_LINKUP_KEY}"
+        }
+      },
+      "control": [
+        {
+          "classType": "tool",
+          "from": "challenge_agent"
+        }
+      ]
+    },
+    {
+      "id": "challenge_python",
+      "provider": "tool_python",
+      "name": "Challenge provenance and fit validator",
+      "config": {
+        "serverName": "python",
+        "timeout": 20,
+        "allowedModules": []
+      },
+      "control": [
+        {
+          "classType": "tool",
+          "from": "challenge_agent"
+        }
+      ]
+    },
+    {
+      "id": "challenge_llm",
+      "provider": "llm_gemini",
+      "name": "Challenge discovery reasoning model",
+      "config": {
+        "profile": "gemini-3_1-flash-lite-preview",
+        "gemini-3_1-flash-lite-preview": {
+          "apikey": "${ROCKETRIDE_GEMINI_KEY}"
+        },
+        "parameters": {}
+      },
+      "control": [
+        {
+          "classType": "llm",
+          "from": "challenge_agent"
+        }
+      ]
+    },
+    {
+      "id": "challenge_response",
+      "provider": "response_answers",
+      "name": "Challenge JSON response",
+      "config": {
+        "laneName": "answers"
+      },
+      "input": [
+        {
+          "lane": "answers",
+          "from": "challenge_agent"
+        }
+      ]
+    }
+  ],
+  "description": "PaperDiff Challenge: three parallel live Linkup scouts, cited candidate fetches, deterministic provenance, and seven-dimension comparison-fit ranking before Compare.",
+  "source": "challenge_webhook",
+  "project_id": "906fabc3-2dec-46f3-96ca-fc705bc49fba",
+  "viewport": {
+    "x": 0,
+    "y": 0,
+    "zoom": 1
+  },
+  "version": 1
+}

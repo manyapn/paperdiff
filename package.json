@@ -9,9 +9,9 @@
   "scripts": {
     "dev": "npm run dev --workspace @paperdiff/web",
     "build": "npm run build --workspace @paperdiff/core && npm run build --workspace @paperdiff/web",
-    "test": "npm run test --workspaces --if-present",
+    "test": "node --test contracts/tests/*.test.mjs pipelines/*.test.mjs && npm run test --workspaces --if-present",
+    "pipeline:preflight": "node pipelines/preflight.mjs",
     "lint": "npm run lint --workspaces --if-present",
     "check": "npm run lint && npm run test && npm run build"
   }
 }
-

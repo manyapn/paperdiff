@@ -14,7 +14,7 @@ paperdiff-verifier-v1/
 └── model-card.md
 ```
 
-Required `label_mapping.json`:
+Required `label_mapping.json` example:
 
 ```json
 {
@@ -23,6 +23,12 @@ Required `label_mapping.json`:
   "2": "insufficient"
 }
 ```
+
+The classifier labels are fixed, but their numeric IDs are assigned by the
+trained artifact. The mapping must cover every model output ID exactly once and
+contain exactly `supports`, `contradicts`, and `insufficient`. Serving code must
+read this file rather than assuming the illustrative order above. The current
+exporter records its trained order when it writes the artifact.
 
 Required `paperdiff_metrics.json` fields:
 
@@ -47,9 +53,9 @@ Required `paperdiff_metrics.json` fields:
 
 Zeroes above describe the schema, not claimed results. Never publish placeholder numbers as experiment outcomes.
 
-## Runtime input
+## Runtime input and output
 
-The RocketRide classifier node or model-hosting adapter will call the model with:
+The model boundary is one claim/evidence pair:
 
 ```json
 {
@@ -58,15 +64,35 @@ The RocketRide classifier node or model-hosting adapter will call the model with
 }
 ```
 
-The adapter must return:
+The HTTP serving adapter batches that boundary as:
 
 ```json
 {
-  "label": "supports",
-  "confidence": 0.93,
-  "abstained": false,
-  "model_version": "paperdiff-verifier-v1"
+  "pairs": [
+    {
+      "claim": "Paper B studies diagnosed depression over two years.",
+      "evidence": "Participants were followed for 24 months..."
+    }
+  ]
 }
 ```
 
-This output then passes through `RelationshipPolicy`; it never bypasses deterministic provenance validation.
+It returns one result per pair in the same order:
+
+```json
+{
+  "results": [
+    {
+      "label": "supports",
+      "confidence": 0.93,
+      "abstained": false,
+      "model_version": "paperdiff-verifier-v1"
+    }
+  ]
+}
+```
+
+The public classifier response contains no probability distribution or product
+state. The RocketRide adapter adds `kind: "classifier"`, verifies batch length,
+and passes each result through the product policy only after deterministic
+provenance validation.
