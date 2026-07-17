@@ -1,21 +1,37 @@
+"""
+Render free-tier classifier service. Loads the quantized ONNX export
+(ml/9_export_onnx_quantized.py) via onnxruntime -- deliberately no torch
+dependency, to fit Render's 512MB free-tier RAM limit as closely as
+possible. transformers is used ONLY for its tokenizer, which doesn't
+require torch to be installed for tokenization alone.
+
+Deploy: Render dashboard -> New Web Service -> connect the paperdiff
+GitHub repo -> Root Directory: pipeline/service/render_classifier ->
+Build Command: cd ../../../apps/web && npm install && npm run build && cd ../../../pipeline/service/render_classifier && pip install -r requirements.txt
+Start Command: python app.py. No credit card required for Render's free tier.
+"""
+
 import json
 import os
+
 import numpy as np
 import onnxruntime as ort
 from transformers import AutoTokenizer
 from huggingface_hub import hf_hub_download
 from flask import Flask, request, jsonify, send_from_directory
 
-# --- CLEAN PATH SETUP ---
-# Since index.html is building directly into this folder, we use the local directory
-BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-app = Flask(__name__, static_folder=BASE_DIR, static_url_path='/')
-
 HF_REPO_ID = "o0meerkat0o/paperdiff-verifier-v1"
 ONNX_SUBFOLDER = "onnx"
-GROUNDED_THRESHOLD = 0.85
+GROUNDED_THRESHOLD = 0.85  # must match packages/core/src/classifier-policy.ts
 QUALIFIED_THRESHOLD = 0.6
 
+# --- ABSOLUTE TRAVERSAL PATH ---
+# Going up 3 folders from pipeline/service/render_classifier to hit the repo root,
+# then pointing straight to apps/web/dist
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+STATIC_FOLDER = os.path.normpath(os.path.join(BASE_DIR, '../../../apps/web/dist'))
+
+app = Flask(__name__, static_folder=STATIC_FOLDER, static_url_path='/')
 _session = None
 _tokenizer = None
 _id2label = None
@@ -110,7 +126,7 @@ def health():
     return jsonify({"status": "ok"})
 
 
-# --- SERVE FRONTEND FROM LOCAL CONTAINER DIRECTORY ---
+# --- SERVE FRONTEND (Correctly placed above the server runner) ---
 
 @app.route('/', defaults={'path': ''})
 @app.route('/<path:path>')
@@ -122,5 +138,5 @@ def serve_frontend(path):
 
 
 if __name__ == "__main__":
-    port = int(os.environ.get("PORT", 10000))
+    port = int(os.environ.get("PORT", 10000))  # Render sets $PORT
     app.run(host="0.0.0.0", port=port)
