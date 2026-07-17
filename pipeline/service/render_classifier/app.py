@@ -124,7 +124,31 @@ def classify():
 def health():
     _load()
     return jsonify({"status": "ok"})
-
+@app.post("/api/compare")
+def api_compare():
+    """
+    Catches the frontend's raw POST requests to /api/compare and runs 
+    the identical classification loop on the incoming payload.
+    """
+    data = request.get_json(force=True)
+    dimensions = []
+    for dim in data.get("dimensions", []):
+        dim = dict(dim)
+        left_classification, left_decision = _classify_side(dim, "left")
+        right_classification, right_decision = _classify_side(dim, "right")
+        dim["left_classifier"] = left_classification
+        dim["left_status"] = left_decision["status"]
+        dim["left_rationale"] = left_decision["rationale"]
+        dim["right_classifier"] = right_classification
+        dim["right_status"] = right_decision["status"]
+        dim["right_rationale"] = right_decision["rationale"]
+        severity = {"blocked": 0, "needs_review": 1, "flagged_for_correction": 1, "qualified": 2, "grounded": 3}
+        worse = min([left_decision["status"], right_decision["status"]], key=lambda s: severity[s])
+        status_display = {"grounded": "Grounded", "qualified": "Qualified", "needs_review": "Needs review",
+                           "flagged_for_correction": "Needs review", "blocked": "Needs review"}
+        dim["evidence_status"] = status_display[worse]
+        dimensions.append(dim)
+    return jsonify({**data, "dimensions": dimensions})
 
 # --- SERVE FRONTEND (Correctly placed above the server runner) ---
 
