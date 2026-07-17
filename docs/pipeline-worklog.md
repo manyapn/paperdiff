@@ -109,3 +109,9 @@ Append-only log. Add new timestamped entries at the end. Do not edit, reorder, o
 - Preserved the teammate report that `o0meerkat0o/paperdiff-verifier-v1` loaded successfully, a temporary local Cloudflare tunnel served classifier calls, and an earlier single-agent graph deployed under project ID `9c3f6c2e-3f2b-4b7a-9a2e-1a7b7f6d2c41`.
 - Kept that earlier deployment out of release scope because its checked-in graph used a temporary tunnel URL, trusted provenance-unaware `product_state`, omitted the strict cited response contract, and diverged from the tenant-validated canonical graph. Replaced its deployment README and handoff TODO with explicit canonical-path guidance.
 - `pipelines/compare.pipe` remains the sole Compare deployment source. The earlier deployment is evidence that basic RocketRide/Linkup/classifier HTTP wiring works, not evidence of a validator-clean prototype.
+
+## 2026-07-17 14:22 PDT — Public classifier artifact verified
+
+- Verified the public Hugging Face model repository at `https://huggingface.co/o0meerkat0o/paperdiff-verifier-v1` through its model metadata API. It is public, ungated, and contains the DeBERTa classification weights, tokenizer/config files, `label_mapping.json`, metrics, and model card.
+- The repository metadata reports no linked Hugging Face Space. The model page is therefore the correct `HF_REPO_ID`, not the `ROCKETRIDE_CLASSIFIER_URL`: it does not expose PaperDiff's required `POST /score_batch` wrapper.
+- The remaining classifier action is unchanged: deploy `ml/serving/` as a Docker Space, verify `/health` and `/score_batch`, then configure the resulting `https://<space>.hf.space` origin in RocketRide Cloud.

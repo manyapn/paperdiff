@@ -54,7 +54,7 @@ The pulled `deploy/paperdiff-compare.pipe` was removed because it was a syntheti
 
 The local serving and pipeline boundaries are now aligned. `ml/serving/score_batch` returns ordered results containing only label, confidence, abstained, and model version. It validates the artifact-defined label mapping rather than assuming numeric class order. Compare adds `kind: classifier` and applies provenance and product-state policy itself.
 
-The remaining operational blocker is hosting: no classifier URL or Hugging Face credential is configured locally. Create and warm the Docker Space described in `ml/serving/README.md`, then set its HTTPS origin as `ROCKETRIDE_CLASSIFIER_URL` in RocketRide Cloud. Do not claim a classifier-backed demo until the full trace shows provenance before the `/score_batch` call and the returned response passes `validateCompareResponse`.
+The public model repository is `https://huggingface.co/o0meerkat0o/paperdiff-verifier-v1`; use `o0meerkat0o/paperdiff-verifier-v1` as `HF_REPO_ID`. It contains the model artifact but is not an HTTP `/score_batch` service and currently has no linked Space. Create and warm the Docker Space described in `ml/serving/README.md`, then set that Space's HTTPS origin as `ROCKETRIDE_CLASSIFIER_URL` in RocketRide Cloud. Do not claim a classifier-backed demo until the full trace shows provenance before the `/score_batch` call and the returned response passes `validateCompareResponse`.
 
 ## One-hour critical path
 
