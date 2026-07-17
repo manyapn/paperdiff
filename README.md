@@ -85,12 +85,7 @@ results render solely from live pipeline responses.
 
 ## Docs
 
-Start with the **[repository guide](docs/repository-guide.md)** — full file structure,
-the three-person ownership split, the classifier contract, testing strategy, and the
-deployment path.
-
-- [Team playbook](docs/team-playbook.md)
-- [Hackathon backlog](docs/hackathon-backlog.md)
-- [Architecture](docs/architecture.md)
-- [Integration checklist](docs/integrations.md)
+- [Architecture](docs/architecture.md) — data flow, trust boundary, and repository layout
+- [Product requirements](docs/PRD.md) — the problem, the users, and what's out of scope
+- [Integrations](docs/integrations.md) — Linkup, classifier hosting, and RocketRide deployment notes
 - [Demo script](docs/demo-script.md)

@@ -96,6 +96,6 @@ Copy `.env.example` to `.env` for local development and replace placeholders loc
 
 ## Deploy and connect the frontend
 
-Use **RocketRide: Deploy Pipeline** from the extension for each graph and select the Cloud connection. Record both Cloud deployment IDs and one successful full-trace reference per workflow in `docs/pipeline-handoff.md`, then append each deployment event to `docs/pipeline-worklog.md`.
+Use **RocketRide: Deploy Pipeline** from the extension for each graph and select the Cloud connection. Keep a record of both Cloud deployment IDs and one successful full-trace reference per workflow outside Git, alongside the other run artifacts.
 
 The standard RocketRide webhook currently returns an envelope around the parsed answer. Confirm the deployed Cloud response shape, auth, and CORS behavior before setting `compareEndpoint` or `challengeEndpoint` in `apps/web/public/config.json`. If the envelope remains, coordinate one small frontend API adapter that sends `text/plain`, supplies the approved public webhook authorization, and unwraps the first parsed `answers` value. Never expose the Linkup key, model-provider key, or private RocketRide token in browser code.

@@ -46,6 +46,26 @@ The second stage may never override a failure in the first stage.
 | Contradicts | Flag extracted field for correction |
 | Insufficient or abstained | Needs review |
 
+## Repository layout
+
+```text
+apps/web/         Static Vite frontend: template, styles, behavior, typed RocketRide client
+packages/core/    Pure trust-policy package: deterministic provenance checks and
+                  classifier-label → product-state mapping, with tests
+pipelines/        Version-controlled RocketRide Compare and Challenge graphs
+contracts/        Compare/Challenge request-response contracts, executable JSON Schemas,
+                  fail-closed semantic validators, and contract tests
+ml/               Model export contract, model card, and the FastAPI classifier service
+notebooks/        Cleaned Colab exports for classifier training
+data/             Source, license, split, and annotation policy for training/eval data
+evaluation/       Required baselines and metrics
+```
+
+There is no application server, database, or Docker setup: RocketRide is the
+hosted backend, the frontend is a static site that renders whatever the
+pipeline returns, and the model is trained separately in Colab and exposed to
+the pipeline through the contract in `ml/export-contract.md`.
+
 ## Core entities
 
 - `ComparisonRequest`: two paper/claim inputs.

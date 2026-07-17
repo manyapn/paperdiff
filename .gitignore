@@ -18,3 +18,10 @@ data/processed/*
 !data/processed/README.md
 ml/outputs/
 .rocketride/
+
+# AI assistant config (local-only)
+.claude/
+.codex/
+CLAUDE.md
+AGENTS.md
+.github/copilot-instructions.md
