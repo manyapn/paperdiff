@@ -234,6 +234,10 @@ test("the RocketRide Challenge graph is parallel-scouted, cited, and secret-safe
   assert.match(instructions, /must never emit Grounded/i);
   assert.match(instructions, /does not decide the final scientific contradiction verdict/i);
   assert.match(instructions, /every python\.execute invocation MUST include one non-empty code string/i);
+  assert.match(instructions, /COMPACT DRAFT ONLY/i);
+  assert.match(instructions, /LITERAL RESPONSE CONTRACT/i);
+  assert.match(instructions, /The top-level key is trace, an array; never return traces/i);
+  assert.match(instructions, /Use the exact scout labels closest contradictory result/i);
   assert.match(instructions, /FINAL SERIALIZATION GATE/i);
   assert.doesNotMatch(pipelineText, /sk-[A-Za-z0-9]/);
 });
