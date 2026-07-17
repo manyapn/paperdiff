@@ -155,3 +155,9 @@ Append-only log. Add new timestamped entries at the end. Do not edit, reorder, o
 
 - Diagnosed repeated Vercel deployments stuck in `Building`: the project was launching Vite's long-running development server instead of a production build.
 - Added `apps/web/vercel.json` to pin Vercel to the Vite framework, `npm run build`, and the `dist` output directory. The RocketRide public authorization remains a sensitive Production environment variable rather than repository content.
+
+## 2026-07-17 15:08 PDT — Generated webhook URL required
+
+- Verified the Vercel homepage and serverless route in Production. A real Compare POST reached the upstream but returned RocketRide HTTP 400.
+- Direct raw-key and Bearer-key requests returned the same 400. RocketRide's official Webhook documentation states that each running pipeline generates its own interface URL in Project Log, so the assumed generic `/webhook` URL is not a release-safe endpoint.
+- Changed the Vercel proxy to require both sensitive server-side values: `ROCKETRIDE_WEBHOOK_URL` and `ROCKETRIDE_PUBLIC_TOKEN`. The route fails closed until the generated Project Log URL is configured.

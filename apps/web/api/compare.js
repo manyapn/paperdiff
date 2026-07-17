@@ -1,7 +1,5 @@
 export const maxDuration = 300;
 
-const ROCKETRIDE_WEBHOOK_URL = "https://api.rocketride.ai/webhook";
-
 export default async function handler(request, response) {
   if (request.method !== "POST") {
     response.setHeader("allow", "POST");
@@ -10,7 +8,8 @@ export default async function handler(request, response) {
   }
 
   const publicToken = process.env.ROCKETRIDE_PUBLIC_TOKEN;
-  if (!publicToken) {
+  const webhookUrl = process.env.ROCKETRIDE_WEBHOOK_URL;
+  if (!publicToken || !webhookUrl) {
     response.status(503).json({
       error: "The RocketRide comparison pipeline is not configured.",
     });
@@ -21,7 +20,7 @@ export default async function handler(request, response) {
     : JSON.stringify(request.body ?? {});
 
   try {
-    const upstream = await fetch(ROCKETRIDE_WEBHOOK_URL, {
+    const upstream = await fetch(webhookUrl, {
       method: "POST",
       headers: {
         authorization: publicToken,
