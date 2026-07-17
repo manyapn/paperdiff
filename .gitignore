@@ -18,6 +18,7 @@ data/processed/*
 !data/processed/README.md
 ml/outputs/
 .rocketride/
+.vercel
 
 # AI assistant config (local-only)
 .claude/

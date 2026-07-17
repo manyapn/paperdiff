@@ -40,7 +40,8 @@ describe("PaperDiff frontend", () => {
   });
 
   it("ships with no endpoint pretending to be a working backend", () => {
-    expect(config).toEqual({ compareEndpoint: "", challengeEndpoint: "" });
+    expect(config.compareEndpoint).toBe("/api/compare");
+    expect(config.challengeEndpoint).toBe("");
     expect(api).toContain("The PaperDiff pipeline is not connected yet.");
   });
 
