@@ -2,7 +2,7 @@
 
 ## Linkup
 
-The adapter boundary is `integrations/linkup.py`. Before implementing live calls:
+Linkup runs inside the RocketRide workflow. Before implementing live calls:
 
 - Confirm the current official SDK and response shape.
 - Search separately for fetch, replication, contradiction, and reassessment use cases.
@@ -12,7 +12,7 @@ The adapter boundary is `integrations/linkup.py`. Before implementing live calls
 
 ## RocketRide
 
-No RocketRide VS Code extension was detected during initial scaffolding. Install it and confirm current node names, config fields, deployment command, and tracing API from the installed version before replacing the fail-closed adapter.
+No RocketRide VS Code extension was detected during initial scaffolding. Install it and confirm current node names, config fields, deployment command, tracing API, and public invocation URL from the installed version before building the workflow.
 
 Expected responsibilities:
 
@@ -24,3 +24,6 @@ Expected responsibilities:
 
 Never add guessed SDK imports or configuration keys just to make the integration appear complete.
 
+## Frontend handoff
+
+Deploy one public Compare endpoint from RocketRide, then provide it to the static frontend as `VITE_ROCKETRIDE_PIPELINE_URL`. Service keys stay in RocketRide; the browser receives only the public workflow URL.

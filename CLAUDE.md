@@ -2,7 +2,7 @@
 
 Follow `AGENTS.md` and the nearest nested `AGENTS.md`.
 
-Start each task by naming the component you own: frontend, pipeline, or verification. Stay inside that ownership directory unless the task explicitly requires a shared-contract change. If it does, make the smallest compatible change and call it out.
+Start each task by naming the component you own: frontend, RocketRide pipeline, or classifier/evaluation. Stay inside that ownership boundary unless the task explicitly requires a shared-contract change. If it does, make the smallest compatible change and call it out.
 
 Priorities:
 
@@ -12,4 +12,3 @@ Priorities:
 4. Challenge mode only after the above is tested.
 
 Before finishing, run the narrowest relevant tests and report exactly what remains mocked or unconfigured.
-

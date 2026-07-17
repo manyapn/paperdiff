@@ -1,12 +1,17 @@
-# Claim-evidence verifier
+# Claim-evidence classifier
 
-Target task: given a comparison claim and an exact evidence passage, predict `supports`, `contradicts`, or `insufficient`, with calibrated confidence and abstention.
+The model answers one question:
 
-The prompted verifier is the hackathon delivery path. Post-hackathon work should add SciFact training, a frozen-embedding baseline, and a scientific cross-encoder while keeping the curated PaperDiff pairs fully held out.
+> Given a claim and a candidate evidence passage, does the passage support it, contradict it, or provide insufficient information?
 
-Files in this scaffold:
+It is currently being trained in Google Colab on roughly 1,700 SciFact claim/evidence examples. The prompted LLM performs the same task as a fallback and evaluation baseline.
 
-- `configs/experiment.example.json`: fixed-seed experiment contract
-- `model-card.md`: intended use, limitations, and reporting checklist
-- `train.py`: command interface that validates configuration and refuses to imply a training run before data/model dependencies are selected
+This directory contains only the stable handoff material:
+
+- `export-contract.md`: model artifacts and inference input/output expected by RocketRide
+- `model-card.md`: intended use, limitations, and required reporting
+
+The live Colab notebook and `3_baselines.py` should be exported into `notebooks/` when cleaned and ready. Do not build a second local training stack.
+
+The classifier is not responsible for retrieval, paper extraction, dimension alignment, diff classification, or the final PaperDiff verdict.
 

@@ -2,74 +2,53 @@
 
 **The verification layer after citations.** PaperDiff determines whether two well-sourced research claims truly conflict or simply studied different populations, interventions, outcomes, definitions, or time horizons.
 
-This repository starts with **Compare mode**, the hackathon MVP. It includes a working demo path, a typed comparison contract, a deterministic provenance gate, a git-diff-style interface, test seams for Linkup and RocketRide, and a clean three-person ownership split.
+Start with the [repository guide](docs/repository-guide.md). It explains the complete file structure, three-person ownership split, classifier contract, testing strategy, and deployment path.
 
-## Quick start
+## Simple architecture
 
-Requirements: Node 22+, npm 10+, and Python 3.11+.
+- `apps/web`: static React/Vite Compare interface
+- RocketRide + Linkup: hosted retrieval and comparison pipeline
+- `packages/core`: deterministic provenance and classifier-to-product-state policy
+- `notebooks` + `ml`: Google Colab claim-evidence classifier
 
-```bash
-cp .env.example .env
-make setup
-```
+There is no separate API server or Docker setup.
 
-In two terminals:
-
-```bash
-make dev-api
-make dev-web
-```
-
-Open <http://localhost:5173>. Click **Load demo pair**, then **Debug disagreement**. The checked-in fixture is deliberately marked as synthetic; swap in a prevalidated real paper pair before presenting it as peer-reviewed evidence.
-
-Run the full local quality gate with:
+## Run locally
 
 ```bash
-make check
+npm install
+npm run dev
 ```
 
-## Repository map
+Open <http://localhost:5173> and click **Debug disagreement** to run the synthetic interface fixture.
 
-| Area | Owner | Purpose |
-| --- | --- | --- |
-| `apps/web/` | Frontend | Claim cards, diff view, verdict, provenance expansion |
-| `services/api/paperdiff_api/pipeline/` | Pipeline | Symmetric extraction, dimension alignment, orchestration |
-| `services/api/paperdiff_api/integrations/` | Pipeline | Linkup and RocketRide boundaries |
-| `services/api/paperdiff_api/verification/` | Verification | Deterministic provenance and semantic relationship checks |
-| `contracts/` | Shared; review required | Stable JSON examples and API contract notes |
-| `evaluation/` and `data/` | Verification/eval | Curated pairs, annotation schema, metrics, model artifacts |
-| `docs/` | Shared | Architecture, demo, integrations, and team workflow |
-
-Read [docs/team-playbook.md](docs/team-playbook.md) and the [hackathon backlog](docs/hackathon-backlog.md) before taking a component. Agent-specific instructions live in `AGENTS.md`, `CLAUDE.md`, `.claude/agents/`, and `.codex/agents/`.
-
-## Current capabilities
-
-- `POST /api/v1/compare` accepts two paper/claim inputs.
-- `GET /api/v1/demo` returns a validated synthetic comparison for offline UI work.
-- Both extraction branches use the same schema and extractor interface.
-- Every displayed evidence span passes deterministic source, identity, fetch, and passage checks.
-- Each comparison row has a backend-generated `equivalent`, `different`, or `incompatible` classification.
-- The verdict and careful synthesis are returned by the backend, not invented by the UI.
-- Live Linkup and RocketRide implementations fail closed until configured.
-
-## Hackathon order of operations
-
-1. Stabilize Compare end to end on one real, open-access pair.
-2. Add two fallback pairs and preserve their source text for deterministic validation.
-3. Confirm the installed RocketRide extension's current node/config names, then implement its adapter.
-4. Connect Linkup live fetch while preserving raw responses and source origin.
-5. Add Challenge discovery/ranking only after Compare is reliable.
-
-Do not build paywall bypasses, a general paper library, citation-network views, or a universal truth score during the hackathon.
-
-## API examples
+## Validate everything
 
 ```bash
-curl http://localhost:8000/health
-curl http://localhost:8000/api/v1/demo
-curl -X POST http://localhost:8000/api/v1/compare \
-  -H 'content-type: application/json' \
-  -d '{"left":{"kind":"demo","value":"paper-a"},"right":{"kind":"demo","value":"paper-b"}}'
+npm run check
 ```
 
-Live URLs intentionally return an actionable `503` until the Linkup adapter is configured. This prevents unverified material from being labeled grounded.
+## Model contract
+
+Given `(claim, evidence passage)`, the lightweight classifier returns:
+
+- `supports` → high-confidence Grounded or lower-confidence Qualified
+- `contradicts` → flag the extracted field for correction
+- `insufficient` → Needs review
+
+The deterministic provenance gate always runs first. Failed provenance is Blocked regardless of classifier confidence.
+
+## Deployment
+
+The static demo deploys from `main` through GitHub Pages. Once the RocketRide Compare workflow is deployed, configure `VITE_ROCKETRIDE_PIPELINE_URL` during the frontend build. Keep all service and model-hosting secrets server-side.
+
+## Team docs
+
+- [Repository guide](docs/repository-guide.md)
+- [Team playbook](docs/team-playbook.md)
+- [Hackathon backlog](docs/hackathon-backlog.md)
+- [Architecture](docs/architecture.md)
+- [Integration checklist](docs/integrations.md)
+- [Demo script](docs/demo-script.md)
+
+The checked-in paper pair is synthetic and must never be presented as peer-reviewed evidence.

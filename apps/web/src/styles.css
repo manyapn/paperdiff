@@ -116,6 +116,7 @@ main { width: min(1180px, 92vw); margin: 0 auto; }
 .status-dot.grounded, .status-dot.complete { background: var(--green); }
 .status-dot.qualified { background: var(--yellow); }
 .status-dot.needs_review, .status-dot.blocked { background: var(--red); }
+.status-dot.flagged_for_correction { background: var(--red); }
 .diff-count { padding: 13px 30px; margin: 0; border-top: 1px solid var(--line); color: var(--muted); font: 9px "DM Mono", monospace; text-align: right; }
 
 .verdict-panel { margin: 24px 0; background: var(--green); color: white; padding: 36px; display: grid; grid-template-columns: 58px 1fr; gap: 20px; align-items: start; }
@@ -176,4 +177,3 @@ footer span:last-child { margin-left: auto; font-family: "DM Mono", monospace; }
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { scroll-behavior: auto !important; animation-duration: .01ms !important; transition-duration: .01ms !important; }
 }
-

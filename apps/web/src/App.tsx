@@ -1,7 +1,6 @@
 import { useMemo, useState } from "react";
 
-import { compareClaims, loadDemo, PaperDiffAPIError } from "./lib/api";
-import { demoComparison } from "./lib/demoComparison";
+import { PaperDiffPipelineError, runComparison } from "./lib/pipelineClient";
 import { initiallyExpanded, statusLabel } from "./lib/presentation";
 import type { ComparisonResponse, DimensionDiff, EvidenceSpan, PaperSummary } from "./types";
 
@@ -137,20 +136,17 @@ export default function App() {
     setLoading(true);
     setNotice(null);
     try {
-      const response = isDefaultPair
-        ? await loadDemo()
-        : await compareClaims(leftClaim, rightClaim);
+      const response = await runComparison(leftClaim, rightClaim, {
+        isDemoPair: isDefaultPair,
+        endpoint: import.meta.env.VITE_ROCKETRIDE_PIPELINE_URL,
+      });
       setResult(response);
       setExpanded(initiallyExpanded(response.dimensions));
     } catch (error) {
-      if (isDefaultPair && error instanceof TypeError) {
-        setResult(demoComparison);
-        setExpanded(initiallyExpanded(demoComparison.dimensions));
-        setNotice("API offline — rendering the checked-in contract fixture.");
-      } else if (error instanceof PaperDiffAPIError) {
+      if (error instanceof PaperDiffPipelineError) {
         setNotice([error.message, error.nextStep].filter(Boolean).join(" "));
       } else {
-        setNotice("The comparison could not be completed. Check the API and try again.");
+        setNotice("The comparison could not be completed. Check the pipeline and try again.");
       }
     } finally {
       setLoading(false);
@@ -323,4 +319,3 @@ export default function App() {
     </div>
   );
 }
-

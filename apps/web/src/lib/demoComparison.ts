@@ -26,6 +26,8 @@ const makeEvidence = (
   relationship: {
     label: "supports",
     confidence: 0.96,
+    abstained: false,
+    model_version: "synthetic-demo-classifier-v1",
     status: "grounded",
     rationale: "The synthetic source passage directly states the displayed method and result.",
   },
@@ -199,4 +201,3 @@ export const demoComparison: ComparisonResponse = {
     },
   ],
 };
-
