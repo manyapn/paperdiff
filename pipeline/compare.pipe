@@ -1,0 +1,535 @@
+{
+  "name": "paperdiff-compare",
+  "description": "Compare-mode pipeline, v3. Provenance stays a fixed deterministic check (hosted service, called via tool). Classification uses prompted-LLM reasoning directly inside verification_agent instead of the trained model -- judges review asynchronously, so nothing in the deployed pipeline can depend on a live personal server (Colab+ngrok, HF Spaces Docker, and HF paid Endpoints were all ruled out for this reason or cost). The trained/evaluated model (ml/) remains the resume/research artifact; swapping it in for live serving is documented future work, not something this deployment depends on. Response assembly stays a fixed deterministic check (hosted service, called via tool).",
+  "version": 1,
+  "components": [
+    {
+      "id": "in",
+      "provider": "webhook",
+      "name": "Webhook",
+      "config": {},
+      "ui": {
+        "position": {
+          "x": 0,
+          "y": 0
+        },
+        "nodeType": "default",
+        "formDataValid": false
+      }
+    },
+    {
+      "id": "extract_left",
+      "provider": "agent_rocketride",
+      "name": "RocketRide Wave",
+      "config": {
+        "systemPrompt": "Input is the 'left' side of a Compare request: {url, claim, use_detected_conclusion}. If url is set, use linkup_fetch_left to retrieve the paper. Extract and return JSON: {title, authors: [string], venue, year, source_url, passages: <int>, dimensions: {research_question, population, exposure_or_intervention, outcome, method, baseline, time_horizon, exclusions, stated_conclusion}, dimensions_evidence: {<field>: {quote, pre, post}}}. Never invent a field you cannot support with an exact quote -- return null and omit its evidence instead of guessing. If url is null, source_url is null, passages is 0, and the user-provided claim is the stated_conclusion with no further extraction."
+      },
+      "ui": {
+        "position": {
+          "x": -300,
+          "y": -300
+        },
+        "nodeType": "default",
+        "formDataValid": false
+      },
+      "input": [
+        {
+          "lane": "questions",
+          "from": "in"
+        }
+      ]
+    },
+    {
+      "id": "extract_left_llm",
+      "provider": "llm_anthropic",
+      "name": "Anthropic",
+      "config": {
+        "model": "claude-sonnet-4-6"
+      },
+      "ui": {
+        "position": {
+          "x": -500,
+          "y": -100
+        },
+        "nodeType": "default",
+        "formDataValid": false
+      },
+      "control": [
+        {
+          "classType": "llm",
+          "from": "extract_left"
+        }
+      ]
+    },
+    {
+      "id": "extract_left_memory",
+      "provider": "memory_internal",
+      "name": "Memory (Internal)",
+      "config": {},
+      "ui": {
+        "position": {
+          "x": -300,
+          "y": -100
+        },
+        "nodeType": "default",
+        "formDataValid": false
+      },
+      "control": [
+        {
+          "classType": "memory",
+          "from": "extract_left"
+        }
+      ]
+    },
+    {
+      "id": "linkup_fetch_left",
+      "provider": "tool_http_request",
+      "name": "HTTP Request",
+      "config": {
+        "method": "POST",
+        "url": "https://api.linkup.so/v1/search",
+        "headers": {
+          "Authorization": "Bearer ${LINKUP_API_KEY}",
+          "Content-Type": "application/json"
+        }
+      },
+      "ui": {
+        "position": {
+          "x": -100,
+          "y": -100
+        },
+        "nodeType": "default",
+        "formDataValid": false
+      },
+      "control": [
+        {
+          "classType": "tool",
+          "from": "extract_left"
+        }
+      ]
+    },
+    {
+      "id": "extract_right",
+      "provider": "agent_rocketride",
+      "name": "RocketRide Wave",
+      "config": {
+        "systemPrompt": "Same extraction schema and rules as the left extractor, applied to the 'right' side of the Compare request. Use linkup_fetch_right if a url is present."
+      },
+      "ui": {
+        "position": {
+          "x": 300,
+          "y": -300
+        },
+        "nodeType": "default",
+        "formDataValid": false
+      },
+      "input": [
+        {
+          "lane": "questions",
+          "from": "in"
+        }
+      ]
+    },
+    {
+      "id": "extract_right_llm",
+      "provider": "llm_anthropic",
+      "name": "Anthropic",
+      "config": {
+        "model": "claude-sonnet-4-6"
+      },
+      "ui": {
+        "position": {
+          "x": 100,
+          "y": -100
+        },
+        "nodeType": "default",
+        "formDataValid": false
+      },
+      "control": [
+        {
+          "classType": "llm",
+          "from": "extract_right"
+        }
+      ]
+    },
+    {
+      "id": "extract_right_memory",
+      "provider": "memory_internal",
+      "name": "Memory (Internal)",
+      "config": {},
+      "ui": {
+        "position": {
+          "x": 300,
+          "y": -100
+        },
+        "nodeType": "default",
+        "formDataValid": false
+      },
+      "control": [
+        {
+          "classType": "memory",
+          "from": "extract_right"
+        }
+      ]
+    },
+    {
+      "id": "linkup_fetch_right",
+      "provider": "tool_http_request",
+      "name": "HTTP Request",
+      "config": {
+        "method": "POST",
+        "url": "https://api.linkup.so/v1/search",
+        "headers": {
+          "Authorization": "Bearer ${LINKUP_API_KEY}",
+          "Content-Type": "application/json"
+        }
+      },
+      "ui": {
+        "position": {
+          "x": 500,
+          "y": -100
+        },
+        "nodeType": "default",
+        "formDataValid": false
+      },
+      "control": [
+        {
+          "classType": "tool",
+          "from": "extract_right"
+        }
+      ]
+    },
+    {
+      "id": "aligner",
+      "provider": "agent_rocketride",
+      "name": "RocketRide Wave",
+      "config": {
+        "systemPrompt": "Given both extracted papers, produce the `dimensions` array for the Compare response: for each of the 9 dimension keys, output {key, label, classification: 'equivalent'|'different'|'incompatible'|'review', left_value, right_value, rationale, drives_verdict: bool, left_evidence, right_evidence (pass through unchanged)}. Use 'review' when either side's value is null -- never classify equivalent/different when one side is missing data. drives_verdict=true only for the 2-3 dimensions that most explain the apparent disagreement."
+      },
+      "ui": {
+        "position": {
+          "x": 0,
+          "y": 100
+        },
+        "nodeType": "default",
+        "formDataValid": false
+      },
+      "input": [
+        {
+          "lane": "answers",
+          "from": "extract_left"
+        },
+        {
+          "lane": "answers",
+          "from": "extract_right"
+        }
+      ]
+    },
+    {
+      "id": "aligner_llm",
+      "provider": "llm_anthropic",
+      "name": "Anthropic",
+      "config": {
+        "model": "claude-sonnet-4-6"
+      },
+      "ui": {
+        "position": {
+          "x": -150,
+          "y": 250
+        },
+        "nodeType": "default",
+        "formDataValid": false
+      },
+      "control": [
+        {
+          "classType": "llm",
+          "from": "aligner"
+        }
+      ]
+    },
+    {
+      "id": "aligner_memory",
+      "provider": "memory_internal",
+      "name": "Memory (Internal)",
+      "config": {},
+      "ui": {
+        "position": {
+          "x": 0,
+          "y": 250
+        },
+        "nodeType": "default",
+        "formDataValid": false
+      },
+      "control": [
+        {
+          "classType": "memory",
+          "from": "aligner"
+        }
+      ]
+    },
+    {
+      "id": "verification_agent",
+      "provider": "agent_rocketride",
+      "name": "RocketRide Wave",
+      "config": {
+        "systemPrompt": "Step 1: call provenance_check with the aligner's full output as the request body -- this is a fixed, deterministic check, never skip it or approximate it yourself. Step 2: for each dimension where provenance_check returned passed=true for a side, classify that side's evidence quote against its dimension value as exactly one of: 'supports', 'contradicts', 'insufficient'. Return your confidence in that label as a number 0-1, calibrated honestly -- do not default to high confidence. Apply this EXACT policy to get evidence_status, do not deviate: if provenance failed for that side -> 'blocked'. Else if label is 'contradicts' -> 'flagged_for_correction'. Else if label is 'insufficient' -> 'needs_review'. Else if label is 'supports' and confidence >= 0.85 -> 'grounded'. Else if label is 'supports' and confidence >= 0.6 -> 'qualified'. Else -> 'needs_review'. For each dimension, the overall evidence_status is the worse of its left and right side statuses (blocked worst, then needs_review/flagged_for_correction, then qualified, then grounded best). Output the same dimensions array with left_classifier/right_classifier ({label, confidence, model_version: 'prompted-llm-fallback'}), left_status/right_status, left_rationale/right_rationale, and evidence_status added to each dimension. Do not invent a supports/contradicts/insufficient label for any side where provenance failed -- leave its classifier null and status 'blocked'."
+      },
+      "ui": {
+        "position": {
+          "x": 0,
+          "y": 400
+        },
+        "nodeType": "default",
+        "formDataValid": false
+      },
+      "input": [
+        {
+          "lane": "answers",
+          "from": "aligner"
+        }
+      ]
+    },
+    {
+      "id": "verification_llm",
+      "provider": "llm_anthropic",
+      "name": "Anthropic",
+      "config": {
+        "model": "claude-sonnet-4-6"
+      },
+      "ui": {
+        "position": {
+          "x": -200,
+          "y": 550
+        },
+        "nodeType": "default",
+        "formDataValid": false
+      },
+      "control": [
+        {
+          "classType": "llm",
+          "from": "verification_agent"
+        }
+      ]
+    },
+    {
+      "id": "verification_memory",
+      "provider": "memory_internal",
+      "name": "Memory (Internal)",
+      "config": {},
+      "ui": {
+        "position": {
+          "x": 0,
+          "y": 550
+        },
+        "nodeType": "default",
+        "formDataValid": false
+      },
+      "control": [
+        {
+          "classType": "memory",
+          "from": "verification_agent"
+        }
+      ]
+    },
+    {
+      "id": "provenance_check",
+      "provider": "tool_http_request",
+      "name": "HTTP Request",
+      "config": {
+        "method": "POST",
+        "url": "${PAPERDIFF_SERVICE_URL}/provenance",
+        "headers": {
+          "Content-Type": "application/json"
+        }
+      },
+      "ui": {
+        "position": {
+          "x": 200,
+          "y": 500
+        },
+        "nodeType": "default",
+        "formDataValid": false
+      },
+      "control": [
+        {
+          "classType": "tool",
+          "from": "verification_agent"
+        }
+      ]
+    },
+    {
+      "id": "verdict_agent",
+      "provider": "agent_rocketride",
+      "name": "RocketRide Wave",
+      "config": {
+        "systemPrompt": "Given the aligned, provenance-checked, classified dimensions, write the Compare response's `verdict` (headline + explanation), `synthesis` (one jointly-supportable sentence with citations), and `evidence_summary` (one sentence). Base the headline on drives_verdict dimensions only. If a dimension's evidence_status is 'Needs review' or 'Blocked', hedge explicitly rather than stating its classification as settled fact. Append these three fields to the input data and pass everything through unchanged otherwise."
+      },
+      "ui": {
+        "position": {
+          "x": 0,
+          "y": 700
+        },
+        "nodeType": "default",
+        "formDataValid": false
+      },
+      "input": [
+        {
+          "lane": "answers",
+          "from": "verification_agent"
+        }
+      ]
+    },
+    {
+      "id": "verdict_llm",
+      "provider": "llm_anthropic",
+      "name": "Anthropic",
+      "config": {
+        "model": "claude-sonnet-4-6"
+      },
+      "ui": {
+        "position": {
+          "x": -200,
+          "y": 850
+        },
+        "nodeType": "default",
+        "formDataValid": false
+      },
+      "control": [
+        {
+          "classType": "llm",
+          "from": "verdict_agent"
+        }
+      ]
+    },
+    {
+      "id": "verdict_memory",
+      "provider": "memory_internal",
+      "name": "Memory (Internal)",
+      "config": {},
+      "ui": {
+        "position": {
+          "x": 0,
+          "y": 850
+        },
+        "nodeType": "default",
+        "formDataValid": false
+      },
+      "control": [
+        {
+          "classType": "memory",
+          "from": "verdict_agent"
+        }
+      ]
+    },
+    {
+      "id": "finalizer_agent",
+      "provider": "agent_rocketride",
+      "name": "RocketRide Wave",
+      "config": {
+        "systemPrompt": "Call assemble_response with the full accumulated data (papers, dimensions, verdict, synthesis, evidence_summary) as the request body. Return its response verbatim as your final answer -- do not modify, summarize, or add anything. This is pure formatting, not a judgment call."
+      },
+      "ui": {
+        "position": {
+          "x": 0,
+          "y": 1000
+        },
+        "nodeType": "default",
+        "formDataValid": false
+      },
+      "input": [
+        {
+          "lane": "answers",
+          "from": "verdict_agent"
+        }
+      ]
+    },
+    {
+      "id": "finalizer_llm",
+      "provider": "llm_anthropic",
+      "name": "Anthropic",
+      "config": {
+        "model": "claude-sonnet-4-6"
+      },
+      "ui": {
+        "position": {
+          "x": -200,
+          "y": 1150
+        },
+        "nodeType": "default",
+        "formDataValid": false
+      },
+      "control": [
+        {
+          "classType": "llm",
+          "from": "finalizer_agent"
+        }
+      ]
+    },
+    {
+      "id": "finalizer_memory",
+      "provider": "memory_internal",
+      "name": "Memory (Internal)",
+      "config": {},
+      "ui": {
+        "position": {
+          "x": 0,
+          "y": 1150
+        },
+        "nodeType": "default",
+        "formDataValid": false
+      },
+      "control": [
+        {
+          "classType": "memory",
+          "from": "finalizer_agent"
+        }
+      ]
+    },
+    {
+      "id": "assemble_response",
+      "provider": "tool_http_request",
+      "name": "HTTP Request",
+      "config": {
+        "method": "POST",
+        "url": "${PAPERDIFF_SERVICE_URL}/assemble",
+        "headers": {
+          "Content-Type": "application/json"
+        }
+      },
+      "ui": {
+        "position": {
+          "x": 200,
+          "y": 1100
+        },
+        "nodeType": "default",
+        "formDataValid": false
+      },
+      "control": [
+        {
+          "classType": "tool",
+          "from": "finalizer_agent"
+        }
+      ]
+    },
+    {
+      "id": "out",
+      "provider": "response",
+      "config": {},
+      "ui": {
+        "position": {
+          "x": 0,
+          "y": 1300
+        },
+        "nodeType": "default",
+        "formDataValid": true
+      },
+      "input": [
+        {
+          "lane": "answers",
+          "from": "finalizer_agent"
+        }
+      ]
+    }
+  ],
+  "project_id": "6850945b-a3e6-4c4d-9eaa-b3240e15073b"
+}

@@ -1,0 +1,5 @@
+flask
+onnxruntime
+transformers
+huggingface_hub
+numpy
