@@ -1,52 +1,94 @@
 # PaperDiff
 
-**The verification layer after citations.** PaperDiff determines whether two well-sourced research claims truly conflict or simply studied different populations, interventions, outcomes, definitions, or time horizons.
+### The verification layer that starts *after* the citation.
 
-Start with the [repository guide](docs/repository-guide.md). It explains the complete file structure, three-person ownership split, classifier contract, testing strategy, and deployment path.
+Two papers, two headlines, one apparent contradiction. Does the research actually
+conflict — or did the studies just look at different people, doses, outcomes, or time
+horizons? PaperDiff reads both primary sources, lines them up dimension by dimension,
+and shows you exactly where the disagreement is real and where it's just scope.
 
-## Simple architecture
+> **"They found the opposite!"** is usually wrong. PaperDiff shows you why.
 
-- `apps/web`: static Vite frontend with separated template, styles, behavior, and generated animation runtime
-- `pipelines/compare.pipe`: RocketRide Compare workflow with live Linkup tools and observable parallel retrieval
-- `pipelines/challenge.pipe`: three live Linkup discovery scouts with cited seven-dimension fit ranking
-- RocketRide + Linkup: hosted retrieval and comparison pipeline
-- `packages/core`: deterministic provenance and classifier-to-product-state policy
-- `notebooks` + `ml`: Google Colab claim-evidence classifier
+---
 
-There is no separate API server or Docker setup.
+## What it does
+
+**🔍 Compare** — Paste two claims or paper links. PaperDiff fetches both primary
+sources, extracts comparable fields (population, exposure, outcome, design…), and
+returns a verdict that's honest about what's *grounded*, what's *qualified*, and what
+still *needs review* — every call backed by an exact source passage.
+
+**⚡ Challenge** — Give it one claim. Three live scouts go find the closest
+**contradictory result**, the best **direct replication**, and the most useful **later
+reassessment**, then rank all three by methodological fit — not text similarity.
+
+Every verdict is traceable back to a highlighted span in the original paper. No vibes,
+no hallucinated citations — if provenance fails, the dimension is **Blocked**, not
+guessed.
+
+---
 
 ## Run locally
 
 ```bash
 npm install
-npm run dev
+npm run dev        # → http://localhost:5173
 ```
 
-Open <http://localhost:5173>. The UI stays empty until you enter two inputs and configure the real RocketRide endpoint in `apps/web/public/config.json`.
+Enter two claims or paper links to Compare, or one claim to Challenge. Configure the
+RocketRide endpoints in `apps/web/public/config.json` to point the frontend at the
+hosted pipeline.
+
+---
+
+## How it's built
+
+| Layer | What's there |
+| --- | --- |
+| **`apps/web`** | Static Vite frontend — separated template, styles, behavior, and a generated animation runtime |
+| **`pipelines/compare.pipe`** | RocketRide Compare workflow with live Linkup retrieval and observable parallel fetch |
+| **`pipelines/challenge.pipe`** | Three live Linkup discovery scouts + cited seven-dimension fit ranking |
+| **`packages/core`** | Deterministic provenance gate and classifier→product-state policy |
+| **`notebooks` + `ml`** | Google Colab claim–evidence classifier |
+
+**Stack:** RocketRide (pipeline orchestration) · Linkup (live retrieval) · Gemini
+(field extraction) · TypeScript + Vite frontend. No API server, no Docker — the
+frontend is fully static and every service secret stays server-side.
+
+---
+
+## The model contract
+
+Given `(claim, evidence passage)`, the lightweight classifier returns:
+
+- `supports` → **Grounded** (high confidence) or **Qualified** (lower confidence)
+- `contradicts` → flag the extracted field for correction
+- `insufficient` → **Needs review**
+
+The deterministic provenance gate always runs **first**. Failed provenance is
+**Blocked** regardless of classifier confidence — a claim we can't trace to the source
+never gets a verdict.
+
+---
 
 ## Validate everything
 
 ```bash
-npm run check
+npm run check      # lint + contract tests + build
 ```
 
-## Model contract
+The frontend ships with **zero** paper, evidence, verdict, or candidate fixtures in the
+production bundle — its animations only ever reflect a request in progress, and real
+results render solely from live pipeline responses.
 
-Given `(claim, evidence passage)`, the lightweight classifier returns:
+---
 
-- `supports` → high-confidence Grounded or lower-confidence Qualified
-- `contradicts` → flag the extracted field for correction
-- `insufficient` → Needs review
+## Docs
 
-The deterministic provenance gate always runs first. Failed provenance is Blocked regardless of classifier confidence.
+Start with the **[repository guide](docs/repository-guide.md)** — full file structure,
+the three-person ownership split, the classifier contract, testing strategy, and the
+deployment path.
 
-## Deployment
-
-The static frontend deploys from `main` through GitHub Pages. It contains no paper, evidence, verdict, or candidate fixtures. Its animations reflect a request in progress, and results render only from RocketRide responses. All service and model-hosting secrets stay server-side.
-
-## Team docs
-
-- [Repository guide](docs/repository-guide.md)
 - [Team playbook](docs/team-playbook.md)
 - [Hackathon backlog](docs/hackathon-backlog.md)
 - [Architecture](docs/architecture.md)
