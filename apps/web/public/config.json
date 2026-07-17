@@ -1,4 +1,4 @@
 {
-  "compareEndpoint": "",
+  "compareEndpoint": "/api/compare",
   "challengeEndpoint": ""
 }

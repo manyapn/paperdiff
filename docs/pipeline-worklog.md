@@ -138,3 +138,15 @@ Append-only log. Add new timestamped entries at the end. Do not edit, reorder, o
 - Attempted a full-trace classifier-backed Compare run with the red-meat/WHO pair. RocketRide accepted the graph and created the task, then its WebSocket disconnected while `send()` was pending; no response was available to validate and the task was left to its six-minute TTL.
 - Retried the deployment after an initial RocketRide HTTP 503. `client.deploy.add` then created canonical Compare project `d9358490-8651-4194-96aa-3b74999f03d0`; a separate status call confirmed `state: active` and `schedule: manual`.
 - Current truth: the classifier is publicly callable and the mandatory canonical graph is active on RocketRide Cloud. A validator-clean browser round trip remains blocked by RocketRide's live WebSocket reliability and unresolved durable webhook/public-auth discovery.
+
+## 2026-07-17 14:51 PDT — Judge-facing Vercel route connected
+
+- Started a one-hour keepalive instance of canonical Compare and obtained its RocketRide public webhook authorization. The private task token was not printed or committed; the public demo token expires with the task.
+- Added a same-origin Vercel `/api/compare` forwarding function so the browser does not depend on RocketRide's missing CORS origin header. It forwards raw `text/plain` JSON with the public authorization and returns the RocketRide envelope unchanged for the existing frontend unwrapping logic.
+- Pointed the frontend runtime config at `/api/compare`. The serverless function prefers `ROCKETRIDE_PUBLIC_TOKEN` from Vercel and contains the current short-lived public demo token as an emergency fallback.
+- Frontend tests (15), TypeScript lint, production build, Node syntax check, and `git diff --check` pass. Keep the RocketRide keepalive, local classifier, and Cloudflare tunnel processes running during judging.
+
+## 2026-07-17 15:02 PDT — Public token moved to Vercel configuration
+
+- Before publication, removed the temporary public-token fallback from the serverless source. `/api/compare` now fails closed with HTTP 503 unless `ROCKETRIDE_PUBLIC_TOKEN` is configured in Vercel; no live authorization value is committed to Git.
+- Removed the local frontend demo-fixture switch from the publishable path so judge requests continue through RocketRide and Linkup rather than embedded results.
