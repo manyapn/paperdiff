@@ -6,7 +6,7 @@
   "exports": "./src/index.ts",
   "scripts": {
     "build": "tsc -p tsconfig.json",
-    "lint": "tsc --noEmit",
+    "lint": "tsc -p tsconfig.lint.json",
     "test": "vitest run"
   },
   "devDependencies": {
@@ -14,4 +14,3 @@
     "vitest": "^4.1.10"
   }
 }
-

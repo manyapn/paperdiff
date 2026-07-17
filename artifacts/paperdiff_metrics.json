@@ -1,0 +1,52 @@
+{
+  "experiment_name": "paperdiff-lightweight-verifier-v1",
+  "seed": 42,
+  "base_model": "cross-encoder/nli-deberta-v3-base",
+  "training_data": {
+    "name": "SciFact",
+    "version": "AI2 release, downloaded from https://scifact.s3-us-west-2.amazonaws.com/release/latest/data.tar.gz",
+    "split_hashes": {
+      "note": "run `!sha256sum scifact_data/data.tar.gz` and paste the hash here manually -- not computed by this script since the tarball may not be present in this session."
+    }
+  },
+  "macro_f1": 0.8723,
+  "per_class_recall": {
+    "insufficient": 0.9643,
+    "supports": 0.8472,
+    "contradicts": 0.8197
+  },
+  "brier_score": 0.2206,
+  "unsupported_claims_allowed_through_rate": 0.0855,
+  "abstention": [
+    {
+      "threshold": 0.5,
+      "coverage": 1.0,
+      "accuracy_when_covered": 0.8688888888888889
+    },
+    {
+      "threshold": 0.6,
+      "coverage": 0.9911111111111112,
+      "accuracy_when_covered": 0.8721973094170403
+    },
+    {
+      "threshold": 0.7,
+      "coverage": 0.9733333333333334,
+      "accuracy_when_covered": 0.8812785388127854
+    },
+    {
+      "threshold": 0.8,
+      "coverage": 0.94,
+      "accuracy_when_covered": 0.8912529550827423
+    },
+    {
+      "threshold": 0.9,
+      "coverage": 0.8955555555555555,
+      "accuracy_when_covered": 0.9032258064516129
+    }
+  ],
+  "latency_ms": {
+    "batch_size": 50,
+    "total_ms": 83.34887599994545,
+    "per_item_ms": 1.666977519998909
+  }
+}
