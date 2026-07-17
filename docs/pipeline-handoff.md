@@ -4,7 +4,7 @@ Updated: 2026-07-17
 
 ## Demo status
 
-Compare is the only critical path. Its local graph/contracts/frontend adapter are implemented and testable, but it has not yet produced one validator-clean end-to-end Cloud response after the latest deterministic-builder change. Do not configure the frontend endpoint or claim a working Cloud prototype until that release gate passes.
+Compare is the only critical path. The canonical graph is deployed and active on RocketRide Cloud under project ID `d9358490-8651-4194-96aa-3b74999f03d0`, and its real classifier is reachable through a temporary HTTPS tunnel. It has not yet produced one validator-clean end-to-end Cloud response because RocketRide's WebSocket repeatedly disconnects after accepting the task. Do not configure the frontend endpoint or claim a fully working Cloud prototype until that release gate passes.
 
 Challenge is implemented locally and has independent frontend-owner approval, but it is stretch work. Freeze it unless Compare is deployed with time remaining.
 
@@ -45,7 +45,7 @@ The pulled `deploy/paperdiff-compare.pipe` was removed because it was a syntheti
 - Cloud auth and the default team work; Linkup and Gemini secrets are present locally and remain ignored.
 - The live tenant exposes `mcp_client`, with endpoint/bearer/transport nested under `config.streamable_http`.
 - A prior Compare run made real parallel Linkup calls and preserved large raw responses in full FLOW traces. Its answer was a Python-like object rather than JSON, and an earlier Python call omitted required `code`; it was correctly rejected and not deployed.
-- Subsequent Compare/Challenge attempts were interrupted by RocketRide SDK/WebSocket process exits after task creation. Ephemeral tasks were cleaned up or expired; no PaperDiff production deployment currently exists on this account/team.
+- Subsequent Compare/Challenge attempts were interrupted by RocketRide SDK/WebSocket process exits after task creation. Ephemeral tasks were cleaned up or left to short TTLs. The canonical Compare deployment now exists and reports active, but it has not returned a validator-clean response.
 - A teammate later reported an earlier single-agent Compare deployment under project ID `9c3f6c2e-3f2b-4b7a-9a2e-1a7b7f6d2c41`, plus successful basic webhook, Linkup HTTP, and temporary-tunnel classifier calls. That graph is not the canonical release graph and must not be connected to the frontend: it trusted provenance-unaware service product state, used a nondurable tunnel URL, and did not pass the cited response contract.
 - The separate Cloud validation API returns an SDK/API mismatch for these graphs, so an actual ephemeral `use` run plus checked-in response validation is the authoritative pre-deployment gate.
 - The live catalog has no deterministic Python/schema `answers -> answers` node. The mandatory final agent-invoked Python builder plus full-trace/result-equivalence inspection is the strongest available RocketRide-native enforcement.
@@ -54,12 +54,12 @@ The pulled `deploy/paperdiff-compare.pipe` was removed because it was a syntheti
 
 The local serving and pipeline boundaries are now aligned. `ml/serving/score_batch` returns ordered results containing only label, confidence, abstained, and model version. It validates the artifact-defined label mapping rather than assuming numeric class order. Compare adds `kind: classifier` and applies provenance and product-state policy itself.
 
-The public model repository is `https://huggingface.co/o0meerkat0o/paperdiff-verifier-v1`; use `o0meerkat0o/paperdiff-verifier-v1` as `HF_REPO_ID`. The real artifact has been downloaded and verified locally through `ml/serving/`: `/health` and `/score_batch` both returned HTTP 200, and the score response passed the narrow boundary. The repository is still not a public `/score_batch` service and currently has no linked Space. Create and warm the Docker Space described in `ml/serving/README.md`, or use an authenticated temporary tunnel for a non-final Cloud test, then set that HTTPS origin as `ROCKETRIDE_CLASSIFIER_URL`. Do not claim a classifier-backed deployed demo until the full trace shows provenance before the classifier call and the returned response passes `validateCompareResponse`.
+The public model repository is `https://huggingface.co/o0meerkat0o/paperdiff-verifier-v1`; use `o0meerkat0o/paperdiff-verifier-v1` as `HF_REPO_ID`. The real artifact has been downloaded and verified locally through `ml/serving/`: `/health` and `/score_batch` both returned HTTP 200, and the score response passed the narrow boundary. A Cloudflare Quick Tunnel now exposes that local service over HTTPS and the public preflight passes; the tunnel must stay running during the demo and has no uptime guarantee. Replace it with the Docker Space described in `ml/serving/README.md` when available.
 
 ## One-hour critical path
 
-1. Host and warm `ml/serving/`, then configure `ROCKETRIDE_CLASSIFIER_URL` in RocketRide Cloud.
-2. Run `pipelines/compare.pipe` ephemerally with full trace on the held-out social-media pair.
+1. Keep the local classifier and Cloudflare tunnel running; replace it with the Hugging Face Space when available.
+2. Run the active `pipelines/compare.pipe` deployment with full trace on the red-meat/WHO pair.
 3. Require parseable JSON, `validateCompareResponse(...).valid === true`, two real Linkup branches, provenance before classifier, an ordered `/score_batch` result, and a successful final Python builder.
 4. Deploy that exact graph manually from the RocketRide extension and record the deployment/reference.
 5. Confirm webhook URL, public auth, CORS, envelope behavior, and one browser Compare round trip.
@@ -67,6 +67,6 @@ The public model repository is `https://huggingface.co/o0meerkat0o/paperdiff-ver
 
 ## Publishing blocker
 
-The repository was fast-forwarded to `origin/main` at `c1470ad` and local work was safely reapplied. Both incoming duplicate graphs were reviewed and removed from release scope; `pipelines/compare.pipe` remains the sole Compare deployment source. Publish the scoped branch/commit and open a draft PR for teammate review once GitHub authentication passes.
+PR #5 was squash-merged into `main` at `f370225`. `pipelines/compare.pipe` remains the sole canonical Compare deployment source.
 
 Never write a credential, fetched paper, raw Linkup response, or classifier token into Git or browser configuration.
