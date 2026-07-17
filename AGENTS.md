@@ -19,13 +19,13 @@ Ship Compare mode first: two grounded claims in, methodological alignment and an
 - Use the same extractor/schema for both sides of Compare.
 - Scientific diff classifications are RocketRide pipeline decisions; the frontend only renders them.
 - Fail closed on retrieval, paper identity, or passage mismatch.
-- Keep the synthetic fixture visibly labeled. Never present it as a real study.
+- Never add embedded paper, evidence, candidate, verdict, or verification fixtures to the frontend.
 
 ## Shared boundaries
 
-- `apps/web/src/types.ts` and `contracts/` define the Compare boundary.
+- `contracts/` defines the future RocketRide Compare boundary.
 - `packages/core/src/types.ts` defines the narrow classifier/provenance boundary.
-- `apps/web/src/lib/demoComparison.ts` is the cross-team response fixture.
+- `apps/web/index.html` is only the Vite shell. Product UI code lives in `apps/web/src/` and renders only configured pipeline responses.
 - Changes to shared contracts need review from at least one other component owner.
 - Do not commit secrets, raw licensed corpora, model weights, or fetched paywalled text.
 - Run `make check` before handoff when dependencies are installed.

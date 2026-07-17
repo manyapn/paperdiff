@@ -2,7 +2,7 @@
 
 ## Lane 1: frontend
 
-Own `apps/web/`. Deliver the ten-second hook, responsive diff interface, loading/error states, keyboard-accessible expansion, and trace drawer. Work against the checked-in example response so pipeline work cannot block UI progress.
+Own `apps/web/`. The supplied `index.html` is the only frontend. Deliver the ten-second hook, responsive diff interface, loading/error states, keyboard-accessible expansion, and trace drawer without creating a parallel React implementation.
 
 ## Lane 2: RocketRide pipeline and integrations
 

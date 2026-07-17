@@ -14,7 +14,7 @@ Input B -> Linkup -> extract --/                              |
                                    claim-evidence classifier (trained model)
                                                               |
                                                               v
-                                                static React diff interface
+                                              static Vite frontend
 ```
 
 RocketRide is the only application backend. The frontend is a static site, and model training happens separately in Google Colab.
@@ -57,4 +57,3 @@ The second stage may never override a failure in the first stage.
 ## Challenge mode
 
 Challenge adds three discovery scouts and comparison-fit ranking before the exact same Compare pipeline. It remains a stretch goal until Compare is stable.
-

@@ -7,37 +7,40 @@ This is the teammate-facing map of the repository: what exists, what each compon
 PaperDiff has three moving parts:
 
 ```text
-React frontend
-    ↓ calls one deployed workflow
+Static Vite frontend
+    ↓ calls configured deployed workflows
 RocketRide pipeline + Linkup retrieval
     ↓ sends (claim, exact evidence passage)
 Lightweight classifier trained in Google Colab
     ↓ supports / contradicts / insufficient + confidence
 RocketRide returns diff + verdict + evidence states
     ↓
-React frontend renders the result
+Interactive frontend renders the result
 ```
 
-There is no FastAPI service, separate Node server, database, or Docker setup. RocketRide is the hosted backend/orchestrator. The frontend is a static Vite app deployed through GitHub Pages. The model is trained separately in Colab and exposed to the pipeline through the small contract in `ml/export-contract.md`.
+There is no FastAPI service, separate Node server, database, or Docker setup. RocketRide is the hosted backend/orchestrator. The frontend is a static Vite app whose editable template, styles, behavior, and loader are separated under `apps/web/src/`. The supplied animation runtime is isolated as generated vendor data. The model is trained separately in Colab and exposed to the pipeline through the small contract in `ml/export-contract.md`.
 
 ## File structure
 
 ```text
 paperdiff/
 ├── apps/
-│   └── web/                              # Static React/Vite product UI
+│   └── web/                              # Static product frontend
+│       ├── index.html                    # Small Vite document shell
 │       ├── src/
-│       │   ├── App.tsx                   # Compare screen and interactions
-│       │   ├── styles.css                # Responsive visual system
-│       │   ├── types.ts                  # Compare response types
-│       │   └── lib/
-│       │       ├── demoComparison.ts     # Synthetic end-to-end demo fixture
-│       │       ├── pipelineClient.ts      # Calls deployed RocketRide workflow
-│       │       ├── pipelineClient.test.ts
-│       │       ├── presentation.ts       # UI-only formatting helpers
-│       │       └── presentation.test.ts
+│       │   ├── main.ts                   # Runtime loading and document startup
+│       │   ├── api.ts                    # Typed RocketRide HTTP client
+│       │   ├── component.js              # Compare/Challenge behavior and API calls
+│       │   ├── paperdiff.template.html   # Product markup
+│       │   ├── styles.css                # Product visual system and animations
+│       │   └── loading.css               # Initial loading screen
+│       ├── public/
+│       │   ├── config.json               # Public RocketRide endpoint URLs
+│       │   └── vendor/                   # Generated animation runtime/assets
+│       ├── tests/frontend.test.ts        # UI contract and truthfulness checks
 │       ├── package.json
-│       ├── vite.config.ts
+│       ├── tsconfig.json
+│       ├── vite.config.ts                # Thin static build wrapper
 │       └── AGENTS.md                     # Frontend-specific agent rules
 │
 ├── packages/
@@ -65,14 +68,16 @@ paperdiff/
 │   ├── README.md                         # Sources, licenses, splits, annotations
 │   ├── raw/README.md                     # Local source-data policy
 │   ├── processed/README.md               # Canonical train JSONL schema
-│   └── annotations/example-pair.jsonl    # Synthetic pair annotation example
+│   └── annotations/                      # Traceable, review-status-labeled pairs
 │
 ├── evaluation/
 │   └── README.md                         # Required baselines and metrics
 │
 ├── contracts/
 │   ├── README.md                         # Cross-team schema rules
-│   └── examples/compare-request.json
+│   ├── compare.md                        # Compare request/response contract
+│   ├── challenge.md                      # Challenge request/response contract
+│   └── examples/compare-request.json     # Placeholder-only request shape
 │
 ├── artifacts/
 │   └── README.md                         # Where reviewed real results belong
@@ -90,7 +95,6 @@ paperdiff/
 ├── .github/workflows/ci.yml              # Tests, build, GitHub Pages deploy
 ├── AGENTS.md                              # Repository-wide agent rules
 ├── CLAUDE.md                              # Repository-wide Claude rules
-├── .env.example                          # Public pipeline URL only; no secrets
 ├── Makefile                               # Thin aliases for npm commands
 ├── package.json                           # npm workspace root
 └── README.md                              # Quick start
@@ -98,18 +102,18 @@ paperdiff/
 
 ## What works now
 
-- The Compare UI runs locally and builds as a static site.
-- The checked-in synthetic pair exercises the complete UI without any service keys.
-- The UI displays eight comparison dimensions, gray/yellow/red backend classifications, provenance chains, a verdict, synthesis, and pipeline trace.
-- `pipelineClient.ts` sends the stable request shape to a RocketRide URL once configured.
+- The supplied Compare and Challenge UI runs locally and builds as a static site.
+- The UI sends real POST requests to configured RocketRide endpoints and contains no scientific fallback data.
+- The UI includes input resolution, analysis animation, methodological diffs, provenance drawers, verdict, careful synthesis, pipeline trace, and Challenge candidates.
 - Deterministic provenance code validates source origin, fetch success, paper identity, exact normalized passage existence, and span specificity.
 - Classifier policy maps every model result to a user-facing state and blocks model confidence from overriding failed provenance.
-- Tests cover the provenance gate, all classifier mappings, fixture presentation, and RocketRide client behavior.
+- Tests cover frontend structure and API behavior, provenance gate, and all classifier mappings.
 - GitHub Actions type-checks, tests, builds, and deploys the static site from `main`.
 
 ## What remains to build
 
 - The actual RocketRide workflow and deployed Compare endpoint
+- Configuring the deployed RocketRide endpoint in `apps/web/public/config.json`
 - Linkup fetch/search nodes with raw-response preservation
 - Symmetric paper extraction and dimension alignment
 - Connection from RocketRide to the trained classifier artifact or endpoint
@@ -188,22 +192,23 @@ This runs workspace type-checks, all unit tests, the core declaration build, and
 
 ## Deployment
 
-The static demo deploys from `main` through `.github/workflows/ci.yml`. It does not need Docker.
+The static frontend deploys from `main` through `.github/workflows/ci.yml`. It does not need Docker.
 
 For the live pipeline:
 
 1. Deploy Compare through RocketRide.
-2. Add the public Compare endpoint as the GitHub Actions/environment value `VITE_ROCKETRIDE_PIPELINE_URL`.
-3. Keep `LINKUP_API_KEY`, `ROCKETRIDE_APIKEY`, model-hosting credentials, and LLM fallback keys server-side—never in `VITE_*` variables.
-4. Rebuild the frontend; `pipelineClient.ts` will call the configured workflow.
+2. Set `compareEndpoint` in `apps/web/public/config.json`.
+3. Keep `LINKUP_API_KEY`, `ROCKETRIDE_APIKEY`, model-hosting credentials, and LLM fallback keys server-side.
+4. Use real, prevalidated inputs as judging fallbacks; never embed their results in the browser.
 
 ## Contract boundaries
 
-- `contracts/examples/compare-request.json` is the workflow request.
-- `apps/web/src/types.ts` is the current response shape consumed by the UI.
-- `apps/web/src/lib/demoComparison.ts` is the response fixture used for parallel frontend work.
+- `contracts/examples/compare-request.json` is a placeholder-only workflow request shape.
+- `contracts/compare.md` and `contracts/challenge.md` define the fields the frontend consumes.
 - `packages/core/src/types.ts` is the narrow claim-evidence classifier/provenance contract.
 - `ml/export-contract.md` is the handoff from Colab training to pipeline inference.
+
+Validate every RocketRide response against the stable contract before frontend handoff.
 
 The frontend renders classifications returned by the pipeline. It must not re-run scientific comparison logic in the browser.
 

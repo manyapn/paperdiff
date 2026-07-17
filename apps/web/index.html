@@ -3,16 +3,20 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <meta name="theme-color" content="#f4f1ea" />
     <meta
       name="description"
-      content="PaperDiff reveals when well-sourced research claims stopped being comparable."
+      content="PaperDiff debugs apparent disagreements between grounded research claims."
     />
-    <title>PaperDiff — Debug grounded disagreement</title>
+    <title>PaperDiff</title>
+    <link rel="stylesheet" href="/src/loading.css" />
   </head>
   <body>
-    <div id="root"></div>
-    <script type="module" src="/src/main.tsx"></script>
+    <main id="app" aria-busy="true">
+      <div class="loading-mark" aria-hidden="true">
+        <span></span><span></span><i></i><span></span><span></span>
+      </div>
+      <p id="loading-status">Loading PaperDiff…</p>
+    </main>
+    <script type="module" src="/src/main.ts"></script>
   </body>
 </html>
-

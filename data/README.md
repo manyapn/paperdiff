@@ -30,7 +30,7 @@ Each JSONL record contains:
 - evidence spans with section and source reference;
 - annotator, reviewer, timestamp, and adjudication notes.
 
-`annotations/example-pair.jsonl` is synthetic and exists only to validate tooling.
+Do not add synthetic paper pairs. Every annotation must name traceable sources and remain `pending-human-review` until checked.
 
 ## Split contract
 
@@ -38,4 +38,3 @@ Each JSONL record contains:
 - Curated PaperDiff pairs: final domain-transfer evaluation only.
 - Golden demo pair and two fallbacks: may be drawn from the curated set, but report this separately from unbiased aggregate results.
 - Fixed seeds and exact split hashes belong in every experiment artifact.
-
