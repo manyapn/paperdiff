@@ -56,4 +56,6 @@ The second stage may never override a failure in the first stage.
 
 ## Challenge mode
 
-Challenge adds three discovery scouts and comparison-fit ranking before the exact same Compare pipeline. It remains a stretch goal until Compare is stable.
+Challenge resolves one source through Linkup, launches contradiction, replication, and later-reassessment searches in one RocketRide tool wave, and fetches the three selected candidates in the next parallel wave. It validates exact source/candidate passages before applying the same seven-field comparison-fit rubric to every candidate.
+
+Challenge is discovery, not adjudication. Its relationship labels are cited hypotheses and its fit score measures methodological comparability. Selecting a candidate sends the original source and candidate URL through the exact same Compare pipeline; Challenge emits no classifier result, `Grounded` state, final verdict, or synthesis.

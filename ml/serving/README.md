@@ -6,9 +6,10 @@ inside a RocketRide pipeline directly. Instead this small FastAPI service hosts
 `paperdiff-verifier-v1` and RocketRide calls it over HTTP via `tool_http_request`.
 
 Weights are not stored in this repo or baked into the Docker image -- they load
-at startup from the private HF Hub repo `ml/6_upload_weights_hf.py` pushes to
-(`o0meerkat0o/paperdiff-verifier-v1` by default), using the same loading logic
-as `ml/7_load_model_from_huggingface.py`.
+at startup from the public, ungated HF Hub repo `ml/6_upload_weights_hf.py`
+pushes to (`o0meerkat0o/paperdiff-verifier-v1` by default), using the same
+loading logic as `ml/7_load_model_from_huggingface.py`. `HF_TOKEN` is optional
+and only needed for authenticated Hub rate limits.
 
 ## Deploy to a free Hugging Face Space
 
@@ -16,12 +17,13 @@ as `ml/7_load_model_from_huggingface.py`.
    `5_export_model.py`) so the model repo exists on the Hub.
 2. Create a new Space at huggingface.co/new-space, SDK = **Docker**, hardware =
    free CPU basic.
-3. Push this `ml/serving/` directory's contents (`app.py`, `requirements.txt`,
-   `Dockerfile`) to the Space's git repo.
-4. In the Space's **Settings > Repository secrets**, add `HF_TOKEN` -- a
-   **read-scoped** token (https://huggingface.co/settings/tokens), not the
-   write token used to upload weights. If the model repo ID differs from the
-   default, also set `HF_REPO_ID`.
+3. Push this `ml/serving/` directory's runtime files (`app.py`, `boundary.py`,
+   `requirements.txt`, and `Dockerfile`) to the Space's git repo.
+4. No Hugging Face secret is required for the default public, ungated model.
+   Optionally add a **read-scoped** `HF_TOKEN` in **Settings > Repository
+   secrets** for authenticated Hub rate limits; never use the write token used
+   to upload weights. If the model repo ID differs from the default, also set
+   `HF_REPO_ID`.
 5. Wait for the Space to build. Note the Space's public URL, e.g.
    `https://<your-username>-paperdiff-verifier.hf.space`.
 
@@ -51,7 +53,36 @@ POST https://<space-url>/score_batch
 body_json: {"pairs": [{"claim": "...", "evidence": "..."}]}
 ```
 
-The response's `product_state` field already applies the same
-grounded/qualified/flag_for_correction/needs_review mapping as
-`packages/core/src/classifier-policy.ts` -- keep both in sync if the policy
-threshold changes.
+The response contains one narrow classifier result per input pair, in the same
+order:
+
+```json
+{
+  "results": [
+    {
+      "label": "supports",
+      "confidence": 0.93,
+      "abstained": false,
+      "model_version": "paperdiff-verifier-v1"
+    }
+  ]
+}
+```
+
+The service does not return product states, evidence states, thresholds, or
+provenance decisions. The RocketRide adapter adds `kind: "classifier"` to the
+Compare verifier object and applies the product policy only after deterministic
+provenance passes. It must also verify that the result count matches the input
+pair count before associating results by position.
+
+The service reads the numeric ID-to-label assignment from the exported
+`label_mapping.json`; callers must never assume a fixed logit order.
+
+## Boundary tests
+
+The boundary tests use plain probability rows and do not load or download the
+model:
+
+```bash
+python -m unittest discover -s ml/serving -p 'test_*.py'
+```

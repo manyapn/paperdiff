@@ -2,75 +2,70 @@
 
 ## Linkup
 
-Linkup runs inside the RocketRide workflow. Before implementing live calls:
+The connected RocketRide Cloud catalog exposes a generic `mcp_client` provider even though it has no Linkup-specific native node. PaperDiff connects that provider to Linkup's hosted Streamable HTTP MCP endpoint, `https://mcp.linkup.so/mcp`, with the server-side `ROCKETRIDE_LINKUP_KEY` bearer secret. The current Cloud profile requires `endpoint`, `bearer`, `headers`, and `transport` under `config.streamable_http`, not at the top level.
 
-- Confirm the current official SDK and response shape.
-- Search separately for fetch, replication, contradiction, and reassessment use cases.
+The Compare workflow must:
+
+- Run independent left/right Linkup search or fetch calls in one RocketRide wave.
+- Fetch supplied paper URLs and search-then-fetch unresolved claims or DOI inputs.
 - Prefer DOI/publisher, PubMed/PMC, arXiv, and official correction pages.
-- Preserve the complete raw response for provenance checks, outside Git.
-- Pass source origin and fetched normalized text into the validator.
+- Preserve complete Linkup results in RocketRide run memory and full traces, outside Git.
+- Retain an HTTPS URL and exact fetched span for every factual value surfaced to the UI.
+
+The Challenge workflow must resolve and fetch its source, issue contradiction, replication, and reassessment searches in one parallel wave, and fetch the three distinct selections in the next parallel wave. Search snippets alone never enter a successful response. Each relationship and fit field retains exact source/candidate passages and HTTPS URLs.
+
+If the hosted MCP interface becomes unavailable, `tool_http_request` is the supported fallback for calling Linkup directly. Restrict its URL allowlist to Linkup and keep the API key server-side.
+
+## Classifier
+
+RocketRide's restricted `tool_python` cannot load the trained torch/transformers artifact. The latest model lane therefore exposes the classifier through the FastAPI service in `ml/serving/`; see `ml/serving/README.md` and `ml/7_load_model_from_huggingface.py`.
+
+The canonical Compare graph already contains the restricted classifier tool. When the service has a stable HTTPS URL:
+
+- Set `ROCKETRIDE_CLASSIFIER_URL` to the service origin without a trailing slash.
+- Keep the tool allowlist restricted to that origin's `/score_batch` path and POST method.
+- Send batches matching `/score_batch` and preserve model version, confidence, abstention, and label.
+- Keep deterministic source/passage provenance ahead of the classifier.
+- Permit `Grounded` only for non-abstained classifier `supports` at the contract threshold; prompted verification remains capped at `Qualified`.
+
+Challenge does not call the classifier and does not emit `Grounded`, a final contradiction verdict, or synthesis.
 
 ## RocketRide
 
-Verified against the real `rocketride` PyPI package, docs.rocketride.org, and
-the rocketride-org/rocketride-server GitHub source (2026-07-17). Corrections
-to the earlier "nothing detected" placeholder:
+Verified against the live Cloud account, the official `rocketride` 1.3.0 SDK/extension, and the connected service catalog on 2026-07-17:
 
-- **No native Linkup node exists.** The full node catalog (113 nodes) has
-  `search_exa`, `tool_exa_search`, `tool_tavily`, `tool_firecrawl` for
-  web search, but nothing for Linkup. Call Linkup's own API through the
-  generic `tool_http_request` node (agent tool: method/URL/headers/body,
-  configurable `urlWhitelist`, auth shortcuts, rate limiting).
-- **The trained classifier cannot run inside RocketRide.** `tool_python`
-  executes via `RestrictedPython.compile_restricted()` with an import
-  allowlist (`math, json, re, collections, datetime, ...`) and no
-  filesystem/network/subprocess access by default. There's no path to load
-  torch + transformers + a model checkpoint there. Host the classifier as
-  its own small HTTP service instead -- see `ml/serving/README.md` -- and
-  call it via `tool_http_request`, same as Linkup.
-- **Deployment is SDK-drivable, not just extension-driven.**
-  `client.deploy.add(pipeline, schedule="manual")` (Python SDK,
-  `pip install rocketride`) persists a pipeline server-side on RocketRide
-  Cloud, independent of the client staying connected. That's the real path
-  to satisfy the hackathon's "deployed to cloud.rocketride.ai" requirement.
-- **Env vars**: `ROCKETRIDE_URI` and `ROCKETRIDE_APIKEY` (matches this
-  repo's `.env.example`) -- the marketing README on GitHub shows
-  `ROCKETRIDE_AUTH` in one quick-connect snippet, but the actual SDK
-  constructor, config table, and every code example consistently use
-  `ROCKETRIDE_APIKEY`; treat that as authoritative.
-- **`ROCKETRIDE_URI` must be `https://api.rocketride.ai`, not
-  `https://cloud.rocketride.ai`.** The docs' own quickstart snippet uses
-  `cloud.rocketride.ai`, but that domain serves the dashboard web app
-  (static React SPA on S3 + CloudFront) and rejects WebSocket upgrades --
-  confirmed by testing both directly. The real API/WebSocket host,
-  `api.rocketride.ai`, is visible in the VS Code extension's own settings
-  under `Rocketride > Development: Host Url`. A live SDK connection test
-  against `wss://api.rocketride.ai/task/service` with a real API key
-  succeeded (2026-07-17); `cloud.rocketride.ai` did not.
-- A `Webhook` source node (`webhook://`) stands up the pipeline's public
-  HTTP endpoint automatically on start -- that URL is what becomes
-  `VITE_ROCKETRIDE_PIPELINE_URL`.
+- Use `ROCKETRIDE_URI=https://api.rocketride.ai` and `ROCKETRIDE_APIKEY`. `cloud.rocketride.ai` is the dashboard, not the SDK WebSocket host.
+- `client.deploy.add(pipeline, schedule="manual")` persists a Cloud deployment. Ephemeral `client.use(...)` runs are the pre-deployment trace/contract gate.
+- `pipelineTraceLevel: "full"` captures component/tool flow needed to demonstrate Linkup calls, concurrency, Python validation, and raw-response preservation.
+- The separate Cloud `validate` call currently returns an SDK/API mismatch for these graphs, so a successful ephemeral `use` run plus response-contract validation is the authoritative deployment gate.
 
-Expected responsibilities:
+The current graph providers are:
 
-- Run both extractors concurrently (via `tool_http_request` calls to Linkup).
-- Later, run the three Challenge scouts concurrently.
-- Enforce a shared schema between stages.
-- Route retrieval, insufficient-evidence, and verifier failures separately.
-- Trace every branch for demo inspection.
+| Role | Provider | Important configuration |
+| --- | --- | --- |
+| HTTP entry | `webhook` | Raw `text/plain` JSON request |
+| Request conversion | `question` | `text` in, `questions` out |
+| Orchestration | `agent_rocketride` | Instructions, waves, one LLM and one memory control |
+| Run memory | `memory_internal` | Run-scoped raw tool-result storage |
+| Linkup | `mcp_client` | `profile: streamable_http` with nested endpoint/bearer config |
+| Deterministic checks | `tool_python` | Agent control tool; every invocation requires non-empty `code` |
+| Classifier | `tool_http_request` | Compare-only once the hosted model URL exists |
+| Result | `response_answers` | Standard RocketRide answer envelope |
 
 Never add guessed SDK imports or configuration keys just to make the integration appear complete.
 
-## Working `.pipe` reference (`deploy/paperdiff-compare.pipe`)
+The live catalog has no deterministic Python/schema component with an `answers -> answers` lane. The strongest available gate is a required final `python.execute` call that recomputes contract invariants and JSON-serializes the returned object, followed by full-trace verification that the response matches that result.
 
-A real pipeline is deployed to RocketRide Cloud (`project_id`
-`9c3f6c2e-3f2b-4b7a-9a2e-1a7b7f6d2c41`) using `client.deploy.add()`. The
-`.pipe` JSON shape below is confirmed working (deployed and invoked
-successfully via the SDK on 2026-07-17), not guessed:
+## Earlier deployed graph and canonical source
+
+An earlier single-agent pipeline was deployed to RocketRide Cloud (`project_id`
+`9c3f6c2e-3f2b-4b7a-9a2e-1a7b7f6d2c41`) using `client.deploy.add()`. Its basic
+webhook/question/agent/tool wiring was invoked successfully, which confirmed
+the shape below:
 
 ```
 webhook (source, lane: text) -> question (adapter) -> agent_rocketride (questions lane)
-                                                            |- control: llm_openai
+                                                            |- control: llm
                                                             |- control: memory_internal (required -- "wave agent requires a memory node")
                                                             |- control: tool_http_request (Linkup)
                                                             |- control: tool_http_request (classifier)
@@ -173,41 +168,21 @@ Observed multiple transient `502`/`503`/connection-timeout errors from
 content -- retrying after a short wait consistently resolved them. Not a
 wiring bug; budget for retries when testing or demoing live.
 
-## Two parallel pipeline builds exist -- reconcile before relying on either
-
-`deploy/paperdiff-compare.pipe` (this doc's author, hand-written + SDK-deployed,
-single agent, OpenAI) and `pipeline/compare.pipe` (a teammate's, likely built
-in the VS Code visual canvas, multi-agent extract/align/verify/verdict/finalize
-chain, Claude/`llm_anthropic`) were built independently and haven't been
-reconciled. Notes for whoever does that:
-
-- `pipeline/compare.pipe` is missing the top-level `"source"` field (same bug
-  documented above) -- will fail with `Pipeline does not have a source
-  component defined` until fixed the same way.
-- `pipeline/compare.pipe` wires its webhook source directly to its agents'
-  `questions` lane (`{"lane": "questions", "from": "in"}`) with no adapter
-  node in between. `deploy/paperdiff-compare.pipe` instead routes through an
-  intermediate `question` provider node because I couldn't get `agent_rocketride`
-  to accept a `json`/`text` lane directly -- but the webhook node's own lane
-  list includes a native `questions` output lane per its README, so the
-  simpler direct-wire approach may well be correct and my adapter node
-  unnecessary complexity. Not confirmed either way -- worth testing both.
-- `pipeline/compare.pipe`'s multi-agent architecture (separate
-  extract/align/verify/verdict/finalize agents, each with Claude + memory) is
-  architecturally closer to what `docs/architecture.md` actually describes
-  than this doc's single-agent version. If only one pipeline should move
-  forward, that one is the more faithful starting point -- it just needs the
-  `source` field fix and a real deploy+invoke test pass (the verification
-  steps in this doc: `client.deploy.add`/`update`, then `client.use` to test,
-  watching for the same category of wave-agent/memory/lane errors documented
-  above).
+That deployed predecessor is not the release graph: it used a temporary
+Cloudflare classifier URL, trusted provenance-unaware `product_state`, omitted
+the strict cited response contract, and used a different model/tool setup.
+`pipelines/compare.pipe` is now the sole canonical deployment source; contract
+tests reject `.pipe` files under legacy `deploy/` or `pipeline/` directories.
+The older deployment should not be connected to the frontend or described as
+the working prototype. Deploy the canonical graph only after its classifier URL
+is durable and one full trace passes the checked-in response validator.
 
 ## Frontend handoff
 
-Deploy one public Compare endpoint from RocketRide, then set `compareEndpoint` in `apps/web/public/config.json`. The endpoint must allow POST requests from the deployed GitHub Pages origin. The supplied UI already sends real POST requests and renders only returned data. Service keys stay in RocketRide; the browser receives only the public workflow URL.
+`apps/web/src/api.ts` sends requests as `text/plain`, accepts direct JSON, and safely unwraps parsed or JSON-string `answers[0]` responses. Challenge rejects candidates without both source and candidate HTTPS citations, exposes visible evidence links, and hands the resolved source URL into Compare.
 
-**Not yet done**: `compareEndpoint` is still unset, blocked on finding the
-durable webhook URL described above. The agent's output has also not yet
-been checked against `contracts/compare.md`'s exact response shape with
-real (non-placeholder) data flowing through -- do that once the durable
-URL is in hand, before wiring the frontend up for a live demo.
+After both graphs pass live trace and contract validation, deploy them and set `compareEndpoint` and `challengeEndpoint` in `apps/web/public/config.json`. Confirm Cloud CORS and public webhook authorization without placing Linkup, model-provider, classifier, or private RocketRide credentials in browser code.
+
+`compareEndpoint` remains unset. Do not connect the earlier deployed graph;
+first deploy the canonical classifier-backed Compare graph, obtain its durable
+webhook URL, and verify a real response against `contracts/compare.md`.

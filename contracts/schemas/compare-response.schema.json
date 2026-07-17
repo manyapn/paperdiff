@@ -1,0 +1,204 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://paperdiff.dev/contracts/compare-response.schema.json",
+  "title": "PaperDiff Compare response",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "trace_id",
+    "pipeline_version",
+    "left",
+    "right",
+    "dimensions",
+    "verdict",
+    "synthesis",
+    "synthesis_citations",
+    "evidence_summary",
+    "trace"
+  ],
+  "properties": {
+    "trace_id": { "type": "string", "minLength": 1 },
+    "pipeline_version": { "type": "string", "minLength": 1 },
+    "left": { "$ref": "#/$defs/paper" },
+    "right": { "$ref": "#/$defs/paper" },
+    "dimensions": {
+      "type": "array",
+      "minItems": 8,
+      "maxItems": 10,
+      "items": { "$ref": "#/$defs/dimension" }
+    },
+    "verdict": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["headline", "explanation", "citations"],
+      "properties": {
+        "headline": { "type": "string", "minLength": 1 },
+        "explanation": { "type": "string", "minLength": 1 },
+        "citations": {
+          "type": "array",
+          "minItems": 2,
+          "items": { "$ref": "#/$defs/url" }
+        }
+      }
+    },
+    "synthesis": { "type": "string", "minLength": 1 },
+    "synthesis_citations": {
+      "type": "array",
+      "minItems": 2,
+      "items": { "$ref": "#/$defs/url" }
+    },
+    "evidence_summary": { "type": "string", "minLength": 1 },
+    "trace": {
+      "type": "array",
+      "minItems": 1,
+      "items": { "$ref": "#/$defs/trace" }
+    }
+  },
+  "$defs": {
+    "url": {
+      "type": "string",
+      "format": "uri",
+      "pattern": "^https://"
+    },
+    "paper": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["title", "authors", "venue", "year", "source_url", "passages"],
+      "properties": {
+        "title": { "type": "string", "minLength": 1 },
+        "authors": {
+          "type": "array",
+          "items": { "type": "string", "minLength": 1 }
+        },
+        "venue": { "type": "string" },
+        "year": { "type": ["integer", "null"] },
+        "source_url": { "$ref": "#/$defs/url" },
+        "passages": { "type": "integer", "minimum": 1 }
+      }
+    },
+    "passage": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["source_url", "span_id", "pre", "span", "post"],
+      "properties": {
+        "source_url": { "$ref": "#/$defs/url" },
+        "span_id": { "type": "string", "minLength": 1 },
+        "pre": { "type": "string" },
+        "span": { "type": "string", "minLength": 1 },
+        "post": { "type": "string" }
+      }
+    },
+    "provenance": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["passed", "checks", "failure_reasons"],
+      "properties": {
+        "passed": { "type": "boolean" },
+        "checks": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "source_origin",
+            "fetched",
+            "identity_match",
+            "passage_match",
+            "span_specific"
+          ],
+          "properties": {
+            "source_origin": { "type": "boolean" },
+            "fetched": { "type": "boolean" },
+            "identity_match": { "type": "boolean" },
+            "passage_match": { "type": "boolean" },
+            "span_specific": { "type": "boolean" }
+          }
+        },
+        "failure_reasons": {
+          "type": "array",
+          "items": { "type": "string", "minLength": 1 }
+        }
+      }
+    },
+    "verifier": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["kind", "label", "confidence", "abstained", "model_version"],
+      "properties": {
+        "kind": { "enum": ["classifier", "prompted_llm"] },
+        "label": { "enum": ["supports", "contradicts", "insufficient"] },
+        "confidence": { "type": "number", "minimum": 0, "maximum": 1 },
+        "abstained": { "type": "boolean" },
+        "model_version": { "type": "string", "minLength": 1 }
+      }
+    },
+    "dimension": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "key",
+        "label",
+        "classification",
+        "left_value",
+        "right_value",
+        "rationale",
+        "drives_verdict",
+        "evidence_status",
+        "evidence_chain",
+        "left_passage",
+        "right_passage",
+        "left_provenance",
+        "right_provenance",
+        "verifier",
+        "verifier_rationale",
+        "verdict_impact"
+      ],
+      "properties": {
+        "key": { "type": "string", "minLength": 1 },
+        "label": { "type": "string", "minLength": 1 },
+        "classification": {
+          "enum": ["equivalent", "different", "incompatible", "review"]
+        },
+        "left_value": { "type": "string" },
+        "right_value": { "type": "string" },
+        "rationale": { "type": "string", "minLength": 1 },
+        "drives_verdict": { "type": "boolean" },
+        "evidence_status": {
+          "enum": [
+            "Grounded",
+            "Qualified",
+            "Flagged for correction",
+            "Needs review",
+            "Blocked"
+          ]
+        },
+        "evidence_chain": {
+          "type": "array",
+          "items": { "type": "string", "minLength": 1 }
+        },
+        "left_passage": {
+          "oneOf": [{ "$ref": "#/$defs/passage" }, { "type": "null" }]
+        },
+        "right_passage": {
+          "oneOf": [{ "$ref": "#/$defs/passage" }, { "type": "null" }]
+        },
+        "left_provenance": { "$ref": "#/$defs/provenance" },
+        "right_provenance": { "$ref": "#/$defs/provenance" },
+        "verifier": { "$ref": "#/$defs/verifier" },
+        "verifier_rationale": { "type": "string", "minLength": 1 },
+        "verdict_impact": { "type": "string", "minLength": 1 }
+      }
+    },
+    "trace": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["stage", "status", "detail", "provider", "latency_ms"],
+      "properties": {
+        "stage": { "type": "string", "minLength": 1 },
+        "status": { "enum": ["complete", "blocked", "review"] },
+        "detail": { "type": "string", "minLength": 1 },
+        "provider": { "type": "string", "minLength": 1 },
+        "latency_ms": { "type": "number", "minimum": 0 },
+        "source_url": { "$ref": "#/$defs/url" }
+      }
+    }
+  }
+}

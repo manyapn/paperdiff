@@ -1,60 +1,32 @@
 # Handoff TODO (2026-07-17)
 
-Status: real progress on all three external integrations individually (Linkup,
-the trained classifier, RocketRide Cloud), but not yet fully connected
-end-to-end, and two teammates independently built separate RocketRide
-pipeline files that need reconciling. Full technical detail for everything
-below is in [`docs/integrations.md`](integrations.md) and
-[`deploy/README.md`](../deploy/README.md).
+The canonical Compare/Challenge graphs, classifier boundary, Linkup integration,
+contracts, frontend transport, and deployment preflight are implemented. See
+`docs/pipeline-handoff.md` and the append-only `docs/pipeline-worklog.md`.
 
-## 1. Whoever has RocketRide VS Code extension / dashboard access
+## Immediate demo path
 
-Open the deployed pipeline (`project_id:
-9c3f6c2e-3f2b-4b7a-9a2e-1a7b7f6d2c41`) and find its **Project Log**. We need
-the permanent public webhook URL for it. Every URL found via the SDK so far
-is temporary -- tied to a `client.use()` test session that dies when the
-session ends. This is the #1 blocker to actually connecting the frontend.
+1. Keep the verified local classifier and its temporary Cloudflare Quick Tunnel
+   running. Set that HTTPS origin as `ROCKETRIDE_CLASSIFIER_URL`; replace it with
+   the Docker Hugging Face Space URL when available.
+2. Run `pipelines/compare.pipe` in RocketRide Cloud with full tracing. Require
+   two Linkup branches, provenance before `/score_batch`, and a response passing
+   `validateCompareResponse` before connecting the browser.
+3. Deploy that exact canonical graph and obtain its durable webhook/public
+   authorization from the RocketRide Project Log.
+4. Set `compareEndpoint`, verify CORS/envelope/auth behavior, and rehearse one
+   golden comparison plus one fail-closed result.
+5. Use Challenge only as a backup until Compare passes.
 
-## 2. Whoever trained the classifier
+## Stopgap adapter
 
-The model works and is public on Hugging Face
-(`o0meerkat0o/paperdiff-verifier-v1`) -- confirmed with real inference
-against real examples. It's currently only reachable through a temporary
-Cloudflare tunnel on one machine. Please create the actual Hugging Face
-Space (steps in [`ml/serving/README.md`](../ml/serving/README.md)) so it has
-a permanent URL. Should take about 10 minutes.
+`deploy/adapter.py` was added on `main` as an untested forwarding adapter for a
+RocketRide session token. It does not replace the canonical pipeline, does not
+make an ephemeral token durable, and must not bypass RocketRide or call Linkup
+and the classifier directly for the submitted product. Use it only if its
+forwarding path is tested against a live RocketRide webhook and the response
+still passes the checked-in contract.
 
-## 3. Whoever built `pipeline/compare.pipe`
-
-That pipeline is the more architecturally complete one (multi-agent
-extract/align/verify/verdict/finalize chain, matches `docs/architecture.md`
-better than the single-agent version in `deploy/paperdiff-compare.pipe`) --
-it should probably be the one the team keeps going forward. It has the same
-bug the other one had: missing a top-level `"source"` field, which will
-fail deploy with `Pipeline does not have a source component defined`. Fix
-pattern and full gotcha list are in `docs/integrations.md` under
-"RocketRide."
-
-## 4. Whoever picks up either pipeline next
-
-Once it deploys and has a real durable URL, run one real end-to-end test
-with two live paper URLs (not the demo/placeholder pair) and check the
-output actually matches `contracts/compare.md`'s exact response shape --
-that has not been confirmed yet with real (non-placeholder) data.
-
-## 5. Frontend
-
-Once there's a durable URL, set it as `compareEndpoint` in
-`apps/web/public/config.json`. The frontend code itself shouldn't need any
-changes -- it already sends the correct request shape.
-
-## Known working pieces (verified, not guessed)
-
-- RocketRide Cloud deployment and SDK auth: working (`api.rocketride.ai`,
-  not `cloud.rocketride.ai` -- see `docs/integrations.md`).
-- Linkup `/fetch` endpoint: working on open-access sources; blocked on
-  PMC/NCBI specifically (bot protection, not a wiring issue).
-- Classifier: working, public HF model, correct predictions on test
-  examples.
-- RocketRide Cloud itself is occasionally flaky (transient 502/503) --
-  not a wiring bug, just retry.
+An earlier single-agent deployment under project ID
+`9c3f6c2e-3f2b-4b7a-9a2e-1a7b7f6d2c41` proved basic Cloud wiring but is not the
+release graph. Do not connect it to the frontend.

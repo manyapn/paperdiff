@@ -7,6 +7,8 @@ Start with the [repository guide](docs/repository-guide.md). It explains the com
 ## Simple architecture
 
 - `apps/web`: static Vite frontend with separated template, styles, behavior, and generated animation runtime
+- `pipelines/compare.pipe`: RocketRide Compare workflow with live Linkup tools and observable parallel retrieval
+- `pipelines/challenge.pipe`: three live Linkup discovery scouts with cited seven-dimension fit ranking
 - RocketRide + Linkup: hosted retrieval and comparison pipeline
 - `packages/core`: deterministic provenance and classifier-to-product-state policy
 - `notebooks` + `ml`: Google Colab claim-evidence classifier

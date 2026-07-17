@@ -34,6 +34,8 @@ describe("PaperDiff frontend", () => {
     expect(component).toContain("window.PaperDiffAPI.post");
     expect(api).toContain("request(endpoint");
     expect(api).toContain('method: "POST"');
+    expect(api).toContain('"content-type": "text/plain"');
+    expect(api).toContain("unwrapRocketRideResponse");
     expect(main).toContain('fetchJson<PaperDiffConfig>("./config.json")');
   });
 
@@ -76,5 +78,16 @@ describe("PaperDiff frontend", () => {
   it("fails visibly when an endpoint or response is missing", () => {
     expect(component).toContain("response does not match the PaperDiff contract");
     expect(template).toContain('role="alert"');
+  });
+
+  it("keeps Challenge claims cited and hands the resolved source to Compare", () => {
+    expect(template).toContain("Open cited source");
+    expect(template).toContain("CITED EVIDENCE");
+    expect(template).toContain('rel="noopener noreferrer"');
+    expect(component).toContain("citationLinks");
+    expect(component).toContain("citations.includes(sourceUrl)");
+    expect(component).toContain("const resolvedSourceUrl = this.safeHttpsUrl(s.chSrc && s.chSrc.sourceUrl)");
+    expect(component).toContain("aUrl: resolvedSourceUrl || (originalIsSource ? originalInput : '')");
+    expect(component).toContain("aClaim: originalIsSource ? '' : originalInput");
   });
 });

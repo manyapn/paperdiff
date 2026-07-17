@@ -77,7 +77,15 @@ paperdiff/
 │   ├── README.md                         # Cross-team schema rules
 │   ├── compare.md                        # Compare request/response contract
 │   ├── challenge.md                      # Challenge request/response contract
+│   ├── schemas/                          # Executable Compare/Challenge JSON Schemas
+│   ├── src/                              # Fail-closed semantic response validators
+│   ├── tests/                            # Pipeline graph and contract tests
 │   └── examples/compare-request.json     # Placeholder-only request shape
+│
+├── pipelines/
+│   ├── compare.pipe                      # Version-controlled RocketRide Compare graph
+│   ├── challenge.pipe                    # Three-scout Challenge discovery graph
+│   └── README.md                         # Local validation and Cloud deployment handoff
 │
 ├── artifacts/
 │   └── README.md                         # Where reviewed real results belong
@@ -107,19 +115,22 @@ paperdiff/
 - The UI includes input resolution, analysis animation, methodological diffs, provenance drawers, verdict, careful synthesis, pipeline trace, and Challenge candidates.
 - Deterministic provenance code validates source origin, fetch success, paper identity, exact normalized passage existence, and span specificity.
 - Classifier policy maps every model result to a user-facing state and blocks model confidence from overriding failed provenance.
+- A version-controlled RocketRide Compare graph connects live Linkup search/fetch, parallel orchestration, restricted provenance computation, and the stable response boundary.
+- A version-controlled RocketRide Challenge graph connects three parallel live search scouts, parallel candidate fetches, deterministic provenance, and fixed seven-field ranking.
+- Executable Compare and Challenge schemas and semantic contract checks reject uncited, mis-scored, or incorrectly grounded responses.
 - Tests cover frontend structure and API behavior, provenance gate, and all classifier mappings.
 - GitHub Actions type-checks, tests, builds, and deploys the static site from `main`.
 
 ## What remains to build
 
-- The actual RocketRide workflow and deployed Compare endpoint
+- Validating the checked-in RocketRide workflow with live credentials and deploying its Compare endpoint
 - Configuring the deployed RocketRide endpoint in `apps/web/public/config.json`
 - Linkup fetch/search nodes with raw-response preservation
 - Symmetric paper extraction and dimension alignment
 - Connection from RocketRide to the trained classifier artifact or endpoint
 - Real golden paper pair plus two fallbacks
 - Curated held-out product evaluation pairs
-- Challenge-mode retrieval/ranking, only after Compare is stable
+- Live credentialed Challenge execution and RocketRide Cloud deployment
 
 ## The lightweight model's exact job
 
