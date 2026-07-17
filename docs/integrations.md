@@ -181,3 +181,24 @@ Remaining before the frontend goes live:
 and safely unwraps parsed or JSON-string `answers[0]` envelopes. Challenge
 rejects candidates without both source and candidate HTTPS citations, exposes
 visible evidence links, and hands the resolved source URL into Compare.
+
+### Vercel proxy
+
+RocketRide's webhook responses carry no CORS origin header, so the deployed
+frontend does not call RocketRide directly. `apps/web/api/compare.js` is a
+same-origin Vercel serverless function that forwards the raw `text/plain`
+JSON body with the public authorization and returns the RocketRide envelope
+unchanged for the existing unwrapping logic; `config.json` points
+`compareEndpoint` at `/api/compare`.
+
+The proxy requires two sensitive server-side environment variables in Vercel
+and fails closed with HTTP 503 until both are configured:
+
+- `ROCKETRIDE_WEBHOOK_URL` — the generated interface URL from the running
+  pipeline's Project Log. The generic `https://api.rocketride.ai/webhook`
+  path returns HTTP 400; each running pipeline generates its own URL.
+- `ROCKETRIDE_PUBLIC_TOKEN` — the public webhook authorization for that run.
+
+No live authorization value is committed to Git. `apps/web/vercel.json` pins
+Vercel to the Vite framework, `npm run build`, and the `dist` output so
+deployments run a production build instead of the dev server.
