@@ -6,6 +6,8 @@
   "scripts": {
     "dev": "vite",
     "build": "vite build",
+    "sanitize:bundle": "node scripts/sanitize-imported-bundle.mjs && node scripts/harden-real-pipeline-bundle.mjs",
+    "harden:bundle": "node scripts/harden-real-pipeline-bundle.mjs",
     "lint": "tsc --noEmit",
     "test": "vitest run",
     "format": "prettier --write index.html tests vite.config.ts"
