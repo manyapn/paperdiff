@@ -6,7 +6,7 @@ Start with the [repository guide](docs/repository-guide.md). It explains the com
 
 ## Simple architecture
 
-- `apps/web`: supplied self-contained interactive HTML interface, built by Vite
+- `apps/web`: static Vite frontend with separated template, styles, behavior, and generated animation runtime
 - RocketRide + Linkup: hosted retrieval and comparison pipeline
 - `packages/core`: deterministic provenance and classifier-to-product-state policy
 - `notebooks` + `ml`: Google Colab claim-evidence classifier
@@ -20,7 +20,7 @@ npm install
 npm run dev
 ```
 
-Open <http://localhost:5173>. The UI stays empty until you enter two inputs and configure the real RocketRide endpoint in `apps/web/public/config.js`.
+Open <http://localhost:5173>. The UI stays empty until you enter two inputs and configure the real RocketRide endpoint in `apps/web/public/config.json`.
 
 ## Validate everything
 

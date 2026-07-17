@@ -1,6 +1,6 @@
 # Challenge endpoint contract
 
-Challenge is optional until Compare is stable. Configure its RocketRide URL as `challengeEndpoint` in `apps/web/public/config.js`.
+Challenge is optional until Compare is stable. Configure its RocketRide URL as `challengeEndpoint` in `apps/web/public/config.json`.
 
 ## Request
 

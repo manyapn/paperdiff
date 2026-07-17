@@ -1,6 +1,6 @@
 # Compare endpoint contract
 
-Configure the public RocketRide URL as `compareEndpoint` in `apps/web/public/config.js`. The browser sends JSON with `Content-Type: application/json`.
+Configure the public RocketRide URL as `compareEndpoint` in `apps/web/public/config.json`. The browser sends JSON with `Content-Type: application/json`.
 
 ## Request
 

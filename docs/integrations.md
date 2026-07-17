@@ -26,4 +26,4 @@ Never add guessed SDK imports or configuration keys just to make the integration
 
 ## Frontend handoff
 
-Deploy one public Compare endpoint from RocketRide, then set `compareEndpoint` in `apps/web/public/config.js`. The endpoint must allow POST requests from the deployed GitHub Pages origin. The supplied UI already sends real POST requests and renders only returned data. Service keys stay in RocketRide; the browser receives only the public workflow URL.
+Deploy one public Compare endpoint from RocketRide, then set `compareEndpoint` in `apps/web/public/config.json`. The endpoint must allow POST requests from the deployed GitHub Pages origin. The supplied UI already sends real POST requests and renders only returned data. Service keys stay in RocketRide; the browser receives only the public workflow URL.
