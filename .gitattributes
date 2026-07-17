@@ -1,0 +1,2 @@
+# Exported vendor runtime and font payloads are generated, not authored source.
+apps/web/public/vendor/** linguist-generated=true

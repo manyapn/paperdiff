@@ -14,7 +14,7 @@ Input B -> Linkup -> extract --/                              |
                                    claim-evidence classifier (trained model)
                                                               |
                                                               v
-                                            bundled interactive HTML interface
+                                              static Vite frontend
 ```
 
 RocketRide is the only application backend. The frontend is a static site, and model training happens separately in Google Colab.

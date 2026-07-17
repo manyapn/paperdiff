@@ -7,8 +7,8 @@ This is the teammate-facing map of the repository: what exists, what each compon
 PaperDiff has three moving parts:
 
 ```text
-Supplied interactive HTML frontend
-    ↓ will call one deployed workflow
+Static Vite frontend
+    ↓ calls configured deployed workflows
 RocketRide pipeline + Linkup retrieval
     ↓ sends (claim, exact evidence passage)
 Lightweight classifier trained in Google Colab
@@ -18,18 +18,26 @@ RocketRide returns diff + verdict + evidence states
 Interactive frontend renders the result
 ```
 
-There is no FastAPI service, separate Node server, database, or Docker setup. RocketRide is the hosted backend/orchestrator. The supplied self-contained HTML bundle is the only frontend; Vite is just its local server/build wrapper. The model is trained separately in Colab and exposed to the pipeline through the small contract in `ml/export-contract.md`.
+There is no FastAPI service, separate Node server, database, or Docker setup. RocketRide is the hosted backend/orchestrator. The frontend is a static Vite app whose editable template, styles, behavior, and loader are separated under `apps/web/src/`. The supplied animation runtime is isolated as generated vendor data. The model is trained separately in Colab and exposed to the pipeline through the small contract in `ml/export-contract.md`.
 
 ## File structure
 
 ```text
 paperdiff/
 ├── apps/
-│   └── web/                              # Supplied self-contained product UI
-│       ├── index.html                    # Styles, assets, UI logic, real API wiring
-│       ├── public/config.js              # Public RocketRide endpoint URLs
-│       ├── scripts/                      # Imported-bundle sanitizing/hardening
-│       ├── tests/frontend.test.ts        # Bundle smoke/feature checks
+│   └── web/                              # Static product frontend
+│       ├── index.html                    # Small Vite document shell
+│       ├── src/
+│       │   ├── main.ts                   # Runtime loading and document startup
+│       │   ├── api.ts                    # Typed RocketRide HTTP client
+│       │   ├── component.js              # Compare/Challenge behavior and API calls
+│       │   ├── paperdiff.template.html   # Product markup
+│       │   ├── styles.css                # Product visual system and animations
+│       │   └── loading.css               # Initial loading screen
+│       ├── public/
+│       │   ├── config.json               # Public RocketRide endpoint URLs
+│       │   └── vendor/                   # Generated animation runtime/assets
+│       ├── tests/frontend.test.ts        # UI contract and truthfulness checks
 │       ├── package.json
 │       ├── tsconfig.json
 │       ├── vite.config.ts                # Thin static build wrapper
@@ -99,13 +107,13 @@ paperdiff/
 - The UI includes input resolution, analysis animation, methodological diffs, provenance drawers, verdict, careful synthesis, pipeline trace, and Challenge candidates.
 - Deterministic provenance code validates source origin, fetch success, paper identity, exact normalized passage existence, and span specificity.
 - Classifier policy maps every model result to a user-facing state and blocks model confidence from overriding failed provenance.
-- Tests cover the frontend bundle features, provenance gate, and all classifier mappings.
+- Tests cover frontend structure and API behavior, provenance gate, and all classifier mappings.
 - GitHub Actions type-checks, tests, builds, and deploys the static site from `main`.
 
 ## What remains to build
 
 - The actual RocketRide workflow and deployed Compare endpoint
-- Configuring the deployed RocketRide endpoint in `apps/web/public/config.js`
+- Configuring the deployed RocketRide endpoint in `apps/web/public/config.json`
 - Linkup fetch/search nodes with raw-response preservation
 - Symmetric paper extraction and dimension alignment
 - Connection from RocketRide to the trained classifier artifact or endpoint
@@ -189,7 +197,7 @@ The static frontend deploys from `main` through `.github/workflows/ci.yml`. It d
 For the live pipeline:
 
 1. Deploy Compare through RocketRide.
-2. Set `compareEndpoint` in `apps/web/public/config.js`.
+2. Set `compareEndpoint` in `apps/web/public/config.json`.
 3. Keep `LINKUP_API_KEY`, `ROCKETRIDE_APIKEY`, model-hosting credentials, and LLM fallback keys server-side.
 4. Use real, prevalidated inputs as judging fallbacks; never embed their results in the browser.
 

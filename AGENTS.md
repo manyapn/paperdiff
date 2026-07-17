@@ -25,7 +25,7 @@ Ship Compare mode first: two grounded claims in, methodological alignment and an
 
 - `contracts/` defines the future RocketRide Compare boundary.
 - `packages/core/src/types.ts` defines the narrow classifier/provenance boundary.
-- `apps/web/index.html` is the supplied self-contained UI, wired only to configured pipeline endpoints.
+- `apps/web/index.html` is only the Vite shell. Product UI code lives in `apps/web/src/` and renders only configured pipeline responses.
 - Changes to shared contracts need review from at least one other component owner.
 - Do not commit secrets, raw licensed corpora, model weights, or fetched paywalled text.
 - Run `make check` before handoff when dependencies are installed.
