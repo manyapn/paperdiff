@@ -1,6 +1,6 @@
 {
   "name": "paperdiff-compare",
-  "description": "Compare-mode pipeline, v2. Provenance/classifier/assembly logic lives in pipeline/service/app.py (hosted separately) since no RocketRide node type runs a fixed script deterministically -- confirmed by checking PREPROCESSOR>Code (text/code chunker), TOOL>Python (agent writes code fresh per call), GUARD (content-safety filter only), and DATA (document parsers only). Each stage is now called via tool_http_request under an orchestrating agent's control, with a system prompt that forbids editorializing the tool's output.",
+  "description": "Compare-mode pipeline, v3. Provenance stays a fixed deterministic check (hosted service, called via tool). Classification uses prompted-LLM reasoning directly inside verification_agent instead of the trained model -- judges review asynchronously, so nothing in the deployed pipeline can depend on a live personal server (Colab+ngrok, HF Spaces Docker, and HF paid Endpoints were all ruled out for this reason or cost). The trained/evaluated model (ml/) remains the resume/research artifact; swapping it in for live serving is documented future work, not something this deployment depends on. Response assembly stays a fixed deterministic check (hosted service, called via tool).",
   "version": 1,
   "components": [
     {
@@ -272,7 +272,7 @@
       "provider": "agent_rocketride",
       "name": "RocketRide Wave",
       "config": {
-        "systemPrompt": "You orchestrate two fixed, deterministic checks. Do not perform validation or classification yourself -- only call the tools and relay their output. Step 1: call provenance_check with the aligner's full output as the request body. Step 2: call classify_evidence with EXACTLY the JSON that provenance_check returned as the request body. Return classify_evidence's response verbatim as your answer, unmodified -- no summarizing, no commentary, no reformatting."
+        "systemPrompt": "Step 1: call provenance_check with the aligner's full output as the request body -- this is a fixed, deterministic check, never skip it or approximate it yourself. Step 2: for each dimension where provenance_check returned passed=true for a side, classify that side's evidence quote against its dimension value as exactly one of: 'supports', 'contradicts', 'insufficient'. Return your confidence in that label as a number 0-1, calibrated honestly -- do not default to high confidence. Apply this EXACT policy to get evidence_status, do not deviate: if provenance failed for that side -> 'blocked'. Else if label is 'contradicts' -> 'flagged_for_correction'. Else if label is 'insufficient' -> 'needs_review'. Else if label is 'supports' and confidence >= 0.85 -> 'grounded'. Else if label is 'supports' and confidence >= 0.6 -> 'qualified'. Else -> 'needs_review'. For each dimension, the overall evidence_status is the worse of its left and right side statuses (blocked worst, then needs_review/flagged_for_correction, then qualified, then grounded best). Output the same dimensions array with left_classifier/right_classifier ({label, confidence, model_version: 'prompted-llm-fallback'}), left_status/right_status, left_rationale/right_rationale, and evidence_status added to each dimension. Do not invent a supports/contradicts/insufficient label for any side where provenance failed -- leave its classifier null and status 'blocked'."
       },
       "ui": {
         "position": {
@@ -346,32 +346,6 @@
         "position": {
           "x": 200,
           "y": 500
-        },
-        "nodeType": "default",
-        "formDataValid": false
-      },
-      "control": [
-        {
-          "classType": "tool",
-          "from": "verification_agent"
-        }
-      ]
-    },
-    {
-      "id": "classify_evidence",
-      "provider": "tool_http_request",
-      "name": "HTTP Request",
-      "config": {
-        "method": "POST",
-        "url": "${PAPERDIFF_SERVICE_URL}/classify",
-        "headers": {
-          "Content-Type": "application/json"
-        }
-      },
-      "ui": {
-        "position": {
-          "x": 400,
-          "y": 550
         },
         "nodeType": "default",
         "formDataValid": false
@@ -557,5 +531,5 @@
       ]
     }
   ],
-  "project_id": "6c582a65-08f5-4acd-80df-5b6bb1d4649e"
+  "project_id": "6850945b-a3e6-4c4d-9eaa-b3240e15073b"
 }
